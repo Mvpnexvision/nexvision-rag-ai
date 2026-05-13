@@ -24,8 +24,11 @@ export default function Documents() {
                             <button
                                 aria-label="Grid view"
                                 type="button"
-                                onClick={() => setViewMode("grid")}
-                                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer focus:outline-none ${viewMode === "grid"
+                                onClick={() => {
+                                    console.log("Grid clicked");
+                                    setViewMode("grid");
+                                }}
+                                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer focus:outline-none pointer-events-auto ${viewMode === "grid"
                                         ? "bg-white text-black shadow-sm border border-gray-200"
                                         : "text-gray-500 hover:text-black hover:bg-gray-200/50 border border-transparent"
                                     }`}
@@ -35,8 +38,11 @@ export default function Documents() {
                             <button
                                 aria-label="List view"
                                 type="button"
-                                onClick={() => setViewMode("list")}
-                                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer focus:outline-none ${viewMode === "list"
+                                onClick={() => {
+                                    console.log("List clicked");
+                                    setViewMode("list");
+                                }}
+                                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer focus:outline-none pointer-events-auto ${viewMode === "list"
                                         ? "bg-white text-black shadow-sm border border-gray-200"
                                         : "text-gray-500 hover:text-black hover:bg-gray-200/50 border border-transparent"
                                     }`}
@@ -84,15 +90,15 @@ export default function Documents() {
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
                     <div className="bg-white rounded-xl w-full max-w-md shadow-lg animate-in fade-in zoom-in-95 duration-200">
                         <div className="flex justify-between items-center p-5 border-b border-gray-200">
-                            <h2 className="text-lg font-medium">Filter Documents</h2>
+                            <h2 className="text-lg font-medium text-black">Filter Documents</h2>
                             <button aria-label="Close filters" onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-neutral-100 rounded-md cursor-pointer transition-colors focus:outline-none">
                                 <i className="fa-solid fa-xmark" aria-hidden="true"></i>
                             </button>
                         </div>
                         <div className="p-6 flex flex-col gap-5">
                             <div>
-                                <label htmlFor="file-type" className="block text-sm font-medium mb-2">File Type</label>
-                                <select id="file-type" aria-label="File Type" className="w-full p-2.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black bg-white cursor-pointer">
+                                <label htmlFor="file-type" className="block text-sm font-medium mb-2 text-black">File Type</label>
+                                <select id="file-type" aria-label="File Type" className="w-full p-2.5 text-black border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black bg-white cursor-pointer">
                                     <option>All Types</option>
                                     <option>PDF (.pdf)</option>
                                     <option>Word (.docx)</option>
@@ -101,10 +107,10 @@ export default function Documents() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-2">Date Modified</label>
+                                <label className="block text-sm font-medium mb-2 text-black">Date Modified</label>
                                 <div className="flex gap-3">
                                     <div className="flex-1">
-                                        <label htmlFor="start-date" className="block text-xs text-gray-500 mb-1">From</label>
+                                        <label htmlFor="start-date" className="block text-xs text-gray-500 mb-1 ">From</label>
                                         <input
                                             type="date"
                                             id="start-date"
