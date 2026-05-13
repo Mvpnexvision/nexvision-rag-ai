@@ -63,7 +63,10 @@ The JSON must exactly match this schema:
   "sources": [
     "Filename.pdf, page 4",
     "Spreadsheet.xlsx, Sheet: Revenue, page N/A"
-  ]
+  ],
+   "title": "Short issue title e.g. Truck 03 PMS Overdue",
+  "suggested_deadline": "When action should be taken e.g. Within 3 days",
+  "status": "New"
 }
 """.strip()
 

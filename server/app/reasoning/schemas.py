@@ -12,6 +12,7 @@ And to the agreed NexVision JSON insight output contract.
 
 from pydantic import BaseModel, Field
 from typing import Literal
+from enum import Enum
 from app.rag.schemas import RetrievedChunk
 
 
@@ -44,6 +45,14 @@ class AIChatRequest(BaseModel):
         description="Number of document chunks to retrieve. Higher = more context, slower.",
     )
 
+class InsightStatus(str, Enum):
+    new = "New"
+    in_review = "In Review"
+    accepted = "Accepted"
+    rejected = "Rejected"
+    completed = "Completed"
+
+
 class NexVisionInsight(BaseModel):
     """
     The structured AI insight — core output of NexVision.
@@ -52,7 +61,8 @@ class NexVisionInsight(BaseModel):
     table columns (answer = direct_answer, reasoning, recommendation, risk_level, sources_json).
 
     {
-        "direct_answer": "",
+         "title": "",
+         "direct_answer": "",
         "evidence_found": [],
         "reasoning": "",
         "recommendation": "",
@@ -60,10 +70,14 @@ class NexVisionInsight(BaseModel):
         "business_impact": "",
         "next_action": "",
         "missing_data": [],
-        "sources": []
-    }
+        "sources": [],
+        "suggested_deadline": "",
+        "status": "New"
+    } 
     """
-
+    title: str = Field(
+        default="Short issue title for the insight card e.g. Truck 03 PMS Overdue.",
+    )
     direct_answer: str = Field(
         ...,
         description="Concise 1–2 sentence answer to the user's question.",
@@ -99,6 +113,14 @@ class NexVisionInsight(BaseModel):
     sources: list[str] = Field(
         ...,
         description="Citations: 'filename, page N' for every claim made.",
+    )
+    suggested_deadline: str = Field(
+        default="",
+        description="When action should be taken e.g. Within 3 days.",
+    )
+    status: InsightStatus = Field(
+        default=InsightStatus.new,
+        description="Insight card status: New, In Review, Accepted, Rejected, or Completed.",
     )
 
 
