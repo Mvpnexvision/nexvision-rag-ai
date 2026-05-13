@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import DocumentCard from "@/components/DocumentCard";
+import DocumentCard from "@/app/(app)/documents/components/DocumentCard";
 
 export default function Documents() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");

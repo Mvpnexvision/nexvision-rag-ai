@@ -5,7 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import ragLogo from "@/app/resources/rag-logo.png";
 import ragLogoName from "@/app/resources/rag-logoName.png";
 
 interface SidebarProps {
@@ -23,7 +22,6 @@ export default function Sidebar({
 }: SidebarProps) {
     const pathname = usePathname();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
 
     const navItems = [
         { name: "Dashboard", path: "/dashboard", icon: "fa-border-all" },
@@ -48,43 +46,23 @@ export default function Sidebar({
                     bg-[#101B1D]
                     border-r border-[#122F35]
                     transition-all duration-300 ease-in-out
-                    ${isCollapsed && !isHovered ? "w-[72px]" : "w-[260px]"}
-                    ${
-                        isMobileOpen
-                            ? "translate-x-0"
-                            : "-translate-x-full md:translate-x-0"
+                    ${isCollapsed ? "w-[72px]" : "w-[260px]"}
+                    ${isMobileOpen
+                        ? "translate-x-0"
+                        : "-translate-x-full md:translate-x-0"
                     }
                 `}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
             >
                 {/* Header */}
                 <div
                     className={`
                         h-16 border-b border-[#122F35]
                         flex items-center
-                        ${isCollapsed && !isHovered ? "justify-center px-2" : "justify-between px-5"}
+                        ${isCollapsed ? "justify-center" : "justify-between px-5"}
                     `}
                 >
-                    {/* Logo */}
-                    <button
-                        onClick={() => {
-                            if (isCollapsed) {
-                                toggleSidebar();
-                            }
-                        }}
-                        className="flex-shrink-0"
-                    >
-                        <Image
-                            src={ragLogo}
-                            alt="RAG Logo"
-                            width={isCollapsed && !isHovered ? 34 : 32}
-                            height={isCollapsed && !isHovered ? 34 : 32}
-                        />
-                    </button>
-
-                    {/* Logo Name - only show when expanded or hovered */}
-                    {(isHovered || !isCollapsed) && (
+                    {/* Logo Name - only show when expanded */}
+                    {!isCollapsed && (
                         <Image
                             src={ragLogoName}
                             alt="RAG Logo Name"
@@ -93,26 +71,24 @@ export default function Sidebar({
                         />
                     )}
 
-                    {/* Desktop Toggle - only show when expanded or hovered */}
-                    {(isHovered || !isCollapsed) && (
-                        <button
-                            aria-label="Toggle sidebar"
-                            onClick={toggleSidebar}
-                            className="
-                                hidden md:flex
-                                w-9 h-9
-                                items-center justify-center
-                                rounded-md
-                                text-white
-                                hover:bg-[#122F35]
-                                hover:text-[#0DBBC4]
-                                transition-colors
-                                flex-shrink-0
-                            "
-                        >
-                            <i className="fa-solid fa-bars"></i>
-                        </button>
-                    )}
+                    {/* Desktop Toggle - Always visible on desktop, sole expand/collapse mechanism */}
+                    <button
+                        aria-label="Toggle sidebar"
+                        onClick={toggleSidebar}
+                        className="
+                            hidden md:flex
+                            w-9 h-9
+                            items-center justify-center
+                            rounded-md
+                            text-white
+                            hover:bg-[#122F35]
+                            hover:text-[#0DBBC4]
+                            transition-colors
+                            flex-shrink-0
+                        "
+                    >
+                        <i className="fa-solid fa-bars"></i>
+                    </button>
 
                     {/* Mobile Close */}
                     <button
@@ -147,11 +123,10 @@ export default function Sidebar({
                                 text-sm font-medium
                                 transition-colors
                                 py-3
-                                ${isCollapsed && !isHovered ? "justify-center px-0" : "gap-4 px-4"}
-                                ${
-                                    pathname === item.path
-                                        ? "bg-[#122F35] text-[#0DBBC4]"
-                                        : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
+                                ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
+                                ${pathname === item.path
+                                    ? "bg-[#122F35] text-[#0DBBC4]"
+                                    : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
                                 }
                             `}
                         >
@@ -159,7 +134,7 @@ export default function Sidebar({
                                 className={`fa-solid ${item.icon} text-lg w-5 text-center`}
                             ></i>
 
-                            {(isHovered || !isCollapsed) && <span>{item.name}</span>}
+                            {!isCollapsed && <span>{item.name}</span>}
                         </Link>
                     ))}
 
@@ -178,11 +153,10 @@ export default function Sidebar({
                                 text-sm font-medium
                                 transition-colors
                                 py-3
-                                ${isCollapsed && !isHovered ? "justify-center px-0" : "gap-4 px-4"}
-                                ${
-                                    showProfileMenu
-                                        ? "bg-[#122F35] text-[#0DBBC4]"
-                                        : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
+                                ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
+                                ${showProfileMenu
+                                    ? "bg-[#122F35] text-[#0DBBC4]"
+                                    : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
                                 }
                             `}
                         >
@@ -199,8 +173,8 @@ export default function Sidebar({
                                 <i className="fa-solid fa-user text-sm text-white"></i>
                             </div>
 
-                            {/* Profile Info - only show when expanded or hovered */}
-                            {(isHovered || !isCollapsed) && (
+                            {/* Profile Info - only show when expanded */}
+                            {!isCollapsed && (
                                 <>
                                     <div className="flex-1 text-left">
                                         <p className="text-sm font-medium">
@@ -217,10 +191,9 @@ export default function Sidebar({
                                             fa-solid fa-chevron-down
                                             text-xs
                                             transition-transform
-                                            ${
-                                                showProfileMenu
-                                                    ? "rotate-180"
-                                                    : ""
+                                            ${showProfileMenu
+                                                ? "rotate-180"
+                                                : ""
                                             }
                                         `}
                                     ></i>
@@ -236,7 +209,7 @@ export default function Sidebar({
                                 className="
                                     absolute
                                     left-0 right-0
-                                    top-0
+                                    bottom-[110%]
                                     bg-[#0A1618]
                                     border border-[#1a3f47]
                                     rounded-md
