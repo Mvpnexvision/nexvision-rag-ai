@@ -16,7 +16,7 @@ Centralising the client here means API key config lives in one place
 and all modules share the same initialised SDK instance.
 """
 
-import google.generativeai as genai
+import google.genai as genai
 from core.config import settings
 
 

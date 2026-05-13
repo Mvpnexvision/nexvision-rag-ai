@@ -23,7 +23,7 @@ Rate limiting note:
 """
 
 import asyncio
-import google.generativeai as genai
+import google.genai as genai
 from core.config import settings
 from core.gemini_client import get_embedding_model
 

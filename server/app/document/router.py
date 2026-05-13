@@ -26,7 +26,7 @@ import io
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
 from typing import Annotated
 
-from modules.document_module.schemas import (
+from app.document.schemas import (
     DocumentUploadResponse,
     DocumentProcessResponse,
     DocumentListResponse,
@@ -34,15 +34,15 @@ from modules.document_module.schemas import (
     DocumentDeleteResponse,
     AccessLevel,
 )
-from modules.document_module.services.extractor import extract_text_from_bytes, get_file_type
-from modules.document_module.services.chunker import chunk_text
-from modules.document_module.services.embedder import embed_chunks, embed_single_text
-from modules.document_module.services.storage import (
+from app.document.services.extractor import extract_text_from_bytes, get_file_type
+from app.document.services.chunker import chunk_text
+from app.document.services.embedder import embed_chunks, embed_single_text
+from app.document.services.storage import (
     upload_file_to_storage,
     delete_file_from_storage,
     get_signed_url,
 )
-from modules.document_module.services.vector_store import (
+from app.document.services.vector_store import (
     store_chunks,
     store_document_record,
     update_document_summary,
@@ -51,7 +51,7 @@ from modules.document_module.services.vector_store import (
     list_company_documents,
     get_document_by_id,
 )
-from modules.document_module.services.status import set_status
+from app.document.services.status import set_status
 from core.gemini_client import get_chat_model
 
 router = APIRouter()

@@ -10,7 +10,20 @@ directly. This keeps configuration in one place and makes testing easy.
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Prefer the repo/server .env file over system env vars. If `.env` is missing
+# fall back to `.env.local`. Use `override=True` to ensure file values take
+# precedence over any variables set on the machine.
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+env_path = os.path.join(project_root, '.env')
+if not os.path.exists(env_path):
+    env_path = os.path.join(project_root, '.env.local')
+
+if os.path.exists(env_path):
+    load_dotenv(env_path, override=True)
+else:
+    # Last-resort: try default search (no override) so we don't accidentally
+    # hide system-wide configuration if no project file exists.
+    load_dotenv()
 
 
 class Settings:

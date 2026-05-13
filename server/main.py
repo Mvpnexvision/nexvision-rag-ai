@@ -29,8 +29,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
-from modules.document_module.router import router as document_router
-from modules.rag_module.router import router as rag_router
+from app.document.router import router as document_router
+from app.rag.router import router as rag_router
 
 # ---------------------------------------------------------------------------
 # App initialisation

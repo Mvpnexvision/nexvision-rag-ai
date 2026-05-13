@@ -21,7 +21,7 @@ import uuid
 import json
 from fastapi import APIRouter, HTTPException, Query
 
-from modules.rag_module.schemas import (
+from app.rag.schemas import (
     AIChatRequest,
     AIChatResponse,
     InsightGenerateRequest,
@@ -29,8 +29,8 @@ from modules.rag_module.schemas import (
     AIQuestionsListResponse,
     AIQuestionRecord,
 )
-from modules.rag_module.services.retriever import retrieve_relevant_chunks
-from modules.rag_module.services.generator import generate_insight
+from app.rag.services.retriever import retrieve_relevant_chunks
+from app.rag.services.generator import generate_insight
 from core.supabase_client import get_supabase_client
 
 router = APIRouter()

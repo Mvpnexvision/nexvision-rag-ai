@@ -1,0 +1,8 @@
+{
+  "name": "nexvision-server",
+  "private": true,
+  "scripts": {
+    "dev": "python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "migrate": "powershell -ExecutionPolicy Bypass -File .\\scripts\\migrate.ps1"
+  }
+}

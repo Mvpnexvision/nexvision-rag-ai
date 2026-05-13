@@ -13,9 +13,9 @@ Schema alignment (v2):
 """
 
 import json
-from modules.document_module.services.embedder import embed_single_text
-from modules.document_module.services.vector_store import vector_search
-from modules.rag_module.schemas import RetrievedChunk
+from app.document.services.embedder import embed_single_text
+from app.document.services.vector_store import vector_search
+from app.rag.schemas import RetrievedChunk
 
 
 async def retrieve_relevant_chunks(

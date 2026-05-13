@@ -18,7 +18,7 @@ import json
 import re
 from fastapi import HTTPException
 from core.gemini_client import get_chat_model
-from modules.rag_module.schemas import NexVisionInsight, RetrievedChunk
+from app.rag.schemas import NexVisionInsight, RetrievedChunk
 
 
 # ---------------------------------------------------------------------------
