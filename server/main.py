@@ -31,6 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from core.config import settings
 from app.document.router import router as document_router
 from app.reasoning.router import router as reasoning_router
+from app.dashboard.router import router as dashboard_router
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -75,6 +76,9 @@ app.include_router(document_router, prefix="/documents", tags=["Document Module"
 
 # Reasoning Module: /ai/chat, /ai/questions, /insights/generate
 app.include_router(reasoning_router, tags=["Reasoning Module"])
+
+# Dashboard Module: /dashboard/stats
+app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard Module"])
 
 
 # ---------------------------------------------------------------------------
