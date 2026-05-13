@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import ragLogoName from "@/app/resources/rag-logoName.png";
 
@@ -22,12 +22,24 @@ export default function Sidebar({
 }: SidebarProps) {
     const pathname = usePathname();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
 
     const navItems = [
         { name: "Dashboard", path: "/dashboard", icon: "fa-border-all" },
         { name: "AI Chat", path: "/chat", icon: "fa-message" },
         { name: "Documents", path: "/documents", icon: "fa-folder-open" },
     ];
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+                setShowProfileMenu(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
         <>
@@ -61,7 +73,6 @@ export default function Sidebar({
                         ${isCollapsed ? "justify-center" : "justify-between px-5"}
                     `}
                 >
-                    {/* Logo Name - only show when expanded */}
                     {!isCollapsed && (
                         <Image
                             src={ragLogoName}
@@ -71,7 +82,6 @@ export default function Sidebar({
                         />
                     )}
 
-                    {/* Desktop Toggle - Always visible on desktop, sole expand/collapse mechanism */}
                     <button
                         aria-label="Toggle sidebar"
                         onClick={toggleSidebar}
@@ -90,7 +100,6 @@ export default function Sidebar({
                         <i className="fa-solid fa-bars"></i>
                     </button>
 
-                    {/* Mobile Close */}
                     <button
                         aria-label="Toggle mobile menu"
                         onClick={toggleMobile}
@@ -130,106 +139,41 @@ export default function Sidebar({
                                 }
                             `}
                         >
-                            <i
-                                className={`fa-solid ${item.icon} text-lg w-5 text-center`}
-                            ></i>
-
+                            <i className={`fa-solid ${item.icon} text-lg w-5 text-center`}></i>
                             {!isCollapsed && <span>{item.name}</span>}
                         </Link>
                     ))}
 
-                    <div className="flex-1"></div>
+                    <div className="flex-1" />
 
-                    {/* Profile Section */}
-                    <div className="relative mb-4">
-                        <button
-                            onMouseEnter={() => setShowProfileMenu(true)}
-                            onMouseLeave={() => setShowProfileMenu(false)}
-                            onClick={() => setShowProfileMenu(!showProfileMenu)}
-                            className={`
-                                w-full
-                                flex items-center
-                                rounded-md
-                                text-sm font-medium
-                                transition-colors
-                                py-3
-                                ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
-                                ${showProfileMenu
-                                    ? "bg-[#122F35] text-[#0DBBC4]"
-                                    : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
-                                }
-                            `}
-                        >
-                            {/* Avatar */}
-                            <div
-                                className="
-                                    w-10 h-10
-                                    rounded-full
-                                    bg-gray-400
-                                    flex items-center justify-center
-                                    flex-shrink-0
-                                "
-                            >
-                                <i className="fa-solid fa-user text-sm text-white"></i>
-                            </div>
+                    {/* ── Profile Section ── */}
+                    <div ref={profileRef} className="relative">
 
-                            {/* Profile Info - only show when expanded */}
-                            {!isCollapsed && (
-                                <>
-                                    <div className="flex-1 text-left">
-                                        <p className="text-sm font-medium">
-                                            First Name
-                                        </p>
-
-                                        <p className="text-xs text-gray-400">
-                                            Staff
-                                        </p>
-                                    </div>
-
-                                    <i
-                                        className={`
-                                            fa-solid fa-chevron-down
-                                            text-xs
-                                            transition-transform
-                                            ${showProfileMenu
-                                                ? "rotate-180"
-                                                : ""
-                                            }
-                                        `}
-                                    ></i>
-                                </>
-                            )}
-                        </button>
-
-                        {/* Dropdown Menu */}
+                        {/* Dropdown — opens upward */}
                         {showProfileMenu && (
-                            <div
-                                onMouseEnter={() => setShowProfileMenu(true)}
-                                onMouseLeave={() => setShowProfileMenu(false)}
-                                className="
-                                    absolute
-                                    left-0 right-0
-                                    bottom-[110%]
-                                    bg-[#0A1618]
-                                    border border-[#1a3f47]
-                                    rounded-md
-                                    shadow-lg
-                                    overflow-hidden
-                                    z-10
-                                "
-                            >
-                                <button
-                                    className="
-                                        w-full
-                                        flex items-center gap-3
-                                        px-4 py-3
-                                        text-sm text-left
-                                        text-white
-                                        hover:bg-[#122F35]
-                                        transition-colors
-                                    "
-                                >
-                                    <i className="fa-solid fa-gear text-lg w-5"></i>
+                            <div className="
+                                absolute left-0 right-0 bottom-[calc(100%+8px)]
+                                bg-[#0D1F22]
+                                border border-[#1a3f47]
+                                rounded-lg
+                                shadow-xl shadow-black/40
+                                overflow-hidden
+                                z-10
+                            ">
+                                {/* User info header inside dropdown */}
+                                <div className="px-4 py-3 border-b border-[#1a3f47]">
+                                    <p className="text-sm font-semibold text-white truncate">First Name</p>
+                                    <p className="text-xs text-[#0DBBC4]/70 truncate">first@email.com</p>
+                                </div>
+
+                                <button className="
+                                    w-full flex items-center gap-3
+                                    px-4 py-2.5
+                                    text-sm text-gray-300
+                                    hover:bg-[#122F35] hover:text-white
+                                    transition-colors
+                                ">
+                                    <i className="fa-solid fa-gear w-4 text-center text-gray-400"></i>
                                     <span>Settings</span>
                                 </button>
 
@@ -237,19 +181,66 @@ export default function Sidebar({
                                     href="/"
                                     className="
                                         flex items-center gap-3
-                                        px-4 py-3
-                                        text-sm
-                                        text-white
-                                        border-t border-[#0a1618]
-                                        hover:bg-[#122F35]
+                                        px-4 py-2.5
+                                        text-sm text-gray-300
+                                        hover:bg-[#122F35] hover:text-white
+                                        border-t border-[#1a3f47]
                                         transition-colors
                                     "
                                 >
-                                    <i className="fa-solid fa-arrow-right-from-bracket text-lg w-5"></i>
-                                    <span>Logout</span>
+                                    <i className="fa-solid fa-arrow-right-from-bracket w-4 text-center text-gray-400"></i>
+                                    <span>Log out</span>
                                 </Link>
                             </div>
                         )}
+
+                        {/* Profile trigger row */}
+                        <button
+                            onClick={() => setShowProfileMenu((prev) => !prev)}
+                            className={`
+                                w-full group
+                                flex items-center gap-3
+                                px-3 py-2.5
+                                rounded-lg
+                                transition-colors
+                                ${showProfileMenu
+                                    ? "bg-[#122F35]"
+                                    : "hover:bg-[#122F35]/60"
+                                }
+                                ${isCollapsed ? "justify-center" : ""}
+                            `}
+                        >
+                            {/* Avatar */}
+                            <div className="
+                                w-8 h-8 rounded-full flex-shrink-0
+                                bg-gradient-to-br from-[#0DBBC4]/30 to-[#0DBBC4]/10
+                                border border-[#0DBBC4]/30
+                                flex items-center justify-center
+                            ">
+                                <span className="text-xs font-semibold text-[#0DBBC4]">FN</span>
+                            </div>
+
+                            {/* Name + role */}
+                            {!isCollapsed && (
+                                <>
+                                    <div className="flex-1 text-left min-w-0">
+                                        <p className="text-sm font-medium text-white truncate leading-tight">
+                                            First Name
+                                        </p>
+                                        <p className="text-xs text-gray-500 truncate leading-tight">
+                                            Staff
+                                        </p>
+                                    </div>
+
+                                    <i className={`
+                                        fa-solid fa-ellipsis
+                                        text-xs text-gray-500
+                                        group-hover:text-gray-300
+                                        transition-colors
+                                    `} />
+                                </>
+                            )}
+                        </button>
                     </div>
                 </nav>
             </aside>
