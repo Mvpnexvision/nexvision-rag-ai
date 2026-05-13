@@ -1,14 +1,23 @@
+# ============================================================
+# NexVision Backend — Python Dependencies
+# ============================================================
+
 # Web Framework
-fastapi==0.136.1
+fastapi[standard]==0.115.6
 uvicorn[standard]
 
-# AI & Reasoning (Gemini 2.5 / 3.1)
-google-genai>=1.55.0
+# AI & Embeddings (Gemini)
+google-generativeai>=0.8.0
 
 # Database & Storage
-supabase
+supabase>=2.10.0
 python-dotenv
 
-# Document Processing
-python-multipart
-pypdf
+# Document Processing — file upload parsing
+python-multipart           # Required by FastAPI for UploadFile / multipart forms
+
+# Document Extraction
+pypdf>=4.0.0               # PDF text extraction
+python-docx>=1.1.0         # DOCX (Microsoft Word) extraction
+openpyxl>=3.1.0            # XLSX (Microsoft Excel) extraction
+pandas>=2.2.0              # CSV parsing and structured data handling
