@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import DocumentCard from "@/components/DocumentCard";
 
 export default function Documents() {
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [showModal, setShowModal] = useState(false);
+    
 
     const docs = [
         { icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", meta: "Oct 12, 2023 • PDF" },
@@ -71,17 +73,15 @@ export default function Documents() {
 
                 <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
                     {docs.map((doc, i) => (
-                        <div key={i} className={`group border border-gray-200 bg-white rounded-xl cursor-pointer hover:border-black hover:shadow-sm hover:bg-neutral-50 transition-all relative ${viewMode === "grid" ? "p-5 flex flex-col gap-2 text-left" : "p-4 flex items-center gap-4"}`}>
-                            <i className={`fa-solid ${doc.icon} text-gray-500 ${viewMode === "grid" ? "text-3xl mb-1" : "text-xl"}`}></i>
-                            <div className={viewMode === "list" ? "flex-1 min-w-0" : "w-full"}>
-                                <span className="text-sm font-medium text-black block truncate w-full mb-1">{doc.name}</span>
-                                <span className="text-xs text-gray-400 block">{doc.meta}</span>
-                            </div>
-                            <button aria-label="Delete document" className={`absolute right-2 top-2 w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200 rounded-md transition-all cursor-pointer focus:outline-none ${viewMode === "list" ? "relative top-0 right-0 border border-transparent opacity-100" : ""}`}>
-                                <i className="fa-solid fa-trash text-sm" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                    ))}
+    <DocumentCard
+        key={i}
+        icon={doc.icon}
+        name={doc.name}
+        meta={doc.meta}
+        viewMode={viewMode}
+        onDelete={() => console.log("Delete:", doc.name)}
+    />
+))}
                 </div>
             </div>
 
