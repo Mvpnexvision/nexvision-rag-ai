@@ -89,15 +89,15 @@ class Settings:
     """
     API key for Google Gemini.
     Get it from: https://aistudio.google.com/app/apikey
-    Used for both text-embedding-004 (embeddings) and gemini-2.5-flash (reasoning).
+    Used for both gemini-embedding-001 (embeddings) and gemini-2.5-flash (reasoning).
     """
 
     GEMINI_EMBEDDING_MODEL: str = os.getenv(
-        "GEMINI_EMBEDDING_MODEL", "models/text-embedding-004"
+        "GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
     )
     """
     Gemini embedding model used to convert text → vector.
-    text-embedding-004 produces 768-dimensional vectors.
+    gemini-embedding-001 produces 1536-dimensional vectors.
     """
 
     GEMINI_CHAT_MODEL: str = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")

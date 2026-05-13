@@ -161,6 +161,7 @@ async def vector_search(
     query_embedding: list[float],
     company_id: str,
     top_k: int = settings.TOP_K_CHUNKS,
+    document_ids: list[str] | None = None,
 ) -> list[dict]:
     """
     Search the vector database for the most semantically similar chunks.
@@ -181,15 +182,14 @@ async def vector_search(
     """
     sb = get_supabase_client()
 
-    result = sb.rpc(
-        "match_documents",
-        {
-            "query_embedding": query_embedding,
-            "match_count": top_k,
-            "filter_company": company_id,
-        },
-    ).execute()
+    params = {
+        "query_embedding": query_embedding,
+        "match_count": top_k,
+        "filter_company": company_id,
+        "filter_documents": document_ids,   # None = search all, list = chat scope
+    }
 
+    result = sb.rpc("match_documents", params).execute()
     return result.data or []
 
 

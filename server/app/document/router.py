@@ -23,6 +23,7 @@ All endpoints visible in Swagger UI at: http://localhost:8000/docs
 
 import uuid
 import io
+from core.config import settings
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
 from typing import Annotated
 
@@ -253,7 +254,10 @@ async def process_document(document_id: str):
             "topic and key business relevance.\n\n"
             f"DOCUMENT EXCERPTS:\n{context}\n\nSUMMARY:"
         )
-        summary_response = model.generate_content(summary_prompt)
+        summary_response = model.generate_content(
+            model=settings.GEMINI_CHAT_MODEL,
+            contents=summary_prompt,
+        )
         summary = summary_response.text.strip() if summary_response.text else None
 
         if summary:
