@@ -1,5 +1,5 @@
 """
-modules/rag_module/services/generator.py
+modules/reasoning/services/generator.py
 =========================================
 STAGE 6 of the pipeline: Generate
 
@@ -18,7 +18,8 @@ import json
 import re
 from fastapi import HTTPException
 from core.gemini_client import get_chat_model
-from app.rag.schemas import NexVisionInsight, RetrievedChunk
+from app.rag.schemas import RetrievedChunk
+from app.reasoning.schemas import NexVisionInsight
 
 
 # ---------------------------------------------------------------------------
