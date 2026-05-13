@@ -1,140 +1,95 @@
 "use client";
-import { useState } from "react";
-import DocumentCard from "@/app/(app)/documents/components/DocumentCard";
+
+import { useState, useMemo } from "react";
+import dayjs from "dayjs";
+import isToday from "dayjs/plugin/isToday";
+import isYesterday from "dayjs/plugin/isYesterday";
+
+import DocumentToolbar from './components/DocumentToolbar';
+import GroupedDocumentView from './components/GroupedDocumentView';
+import FilterModal from './components/FilterModal';
+
+// Extend dayjs plugins
+dayjs.extend(isToday);
+dayjs.extend(isYesterday);
+
+export type ViewMode = "grid" | "list";
+
+export interface DocumentItem {
+    id: string;
+    icon: string;
+    name: string;
+    date: string; // ISO string
+    type: string;
+}
 
 export default function Documents() {
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [viewMode, setViewMode] = useState<ViewMode>("grid");
     const [showModal, setShowModal] = useState(false);
-    
 
-    const docs = [
-        { icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", meta: "Oct 12, 2023 • PDF" },
-        { icon: "fa-file-word", name: "Project_Requirements_v2.docx", meta: "Oct 11, 2023 • DOCX" },
-        { icon: "fa-file-csv", name: "User_Feedback_Q1-Q2.csv", meta: "Oct 09, 2023 • CSV" },
-        { icon: "fa-file-pdf", name: "Employee_Handbook_2023.pdf", meta: "Sep 28, 2023 • PDF" },
-        { icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", meta: "Sep 15, 2023 • DOCX" },
+    // Mock data using dynamic dates to demonstrate the Today/Yesterday grouping
+    const docs: DocumentItem[] = [
+        { id: "1", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
+        { id: "2", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
+        { id: "3", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
+        { id: "4", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
+        { id: "5", icon: "fa-file-word", name: "Project_Requirements_v2.docx", date: dayjs().subtract(1, "day").toISOString(), type: "DOCX" },
+        { id: "6", icon: "fa-file-csv", name: "User_Feedback_Q1-Q2.csv", date: dayjs().subtract(3, "day").toISOString(), type: "CSV" },
+        { id: "7", icon: "fa-file-pdf", name: "Employee_Handbook_2023.pdf", date: dayjs().subtract(45, "day").toISOString(), type: "PDF" },
+        { id: "8", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
+        { id: "9", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
+        { id: "10", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
+        { id: "11", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
+        { id: "12", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
+        { id: "13", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
     ];
+
+    // Grouping logic
+    const groupedDocs = useMemo(() => {
+        const groups: Record<string, DocumentItem[]> = {};
+
+        docs.forEach((doc) => {
+            const d = dayjs(doc.date);
+            let groupName = "";
+
+            if (d.isToday()) {
+                groupName = "Today";
+            } else if (d.isYesterday()) {
+                groupName = "Yesterday";
+            } else {
+                groupName = d.format("MMM DD, YYYY");
+            }
+
+            if (!groups[groupName]) {
+                groups[groupName] = [];
+            }
+            groups[groupName].push(doc);
+        });
+
+        return groups;
+    }, [docs]);
 
     return (
         <div className="p-8 max-w-7xl mx-auto">
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <h2 className="text-2xl font-medium text-black">My Documents</h2>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <div className="flex gap-1 bg-neutral-50 p-1 rounded-md border border-gray-200">
-                            <button
-                                aria-label="Grid view"
-                                type="button"
-                                onClick={() => {
-                                    console.log("Grid clicked");
-                                    setViewMode("grid");
-                                }}
-                                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer focus:outline-none pointer-events-auto ${viewMode === "grid"
-                                        ? "bg-white text-black shadow-sm border border-gray-200"
-                                        : "text-gray-500 hover:text-black hover:bg-gray-200/50 border border-transparent"
-                                    }`}
-                            >
-                                <i className="fa-solid fa-border-all" aria-hidden="true"></i>
-                            </button>
-                            <button
-                                aria-label="List view"
-                                type="button"
-                                onClick={() => {
-                                    console.log("List clicked");
-                                    setViewMode("list");
-                                }}
-                                className={`w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer focus:outline-none pointer-events-auto ${viewMode === "list"
-                                        ? "bg-white text-black shadow-sm border border-gray-200"
-                                        : "text-gray-500 hover:text-black hover:bg-gray-200/50 border border-transparent"
-                                    }`}
-                            >
-                                <i className="fa-solid fa-list" aria-hidden="true"></i>
-                            </button>
-                        </div>
+                <DocumentToolbar
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    onOpenFilter={() => setShowModal(true)}
+                />
 
-                        <div className="flex items-center gap-2 bg-neutral-50 border border-gray-200 rounded-md px-3 py-2 w-full md:w-64 focus-within:border-black cursor-text">
-                            <i className="fa-solid fa-magnifying-glass text-gray-400"></i>
-                            <input type="text" placeholder="Search my documents..." className="bg-transparent border-none outline-none text-sm w-full" />
-                        </div>
+                <GroupedDocumentView
+                    groupedDocs={groupedDocs}
+                    viewMode={viewMode}
+                />
 
-                        <button
-                            type="button"
-                            onClick={() => setShowModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-transparent border border-gray-200 rounded-md text-sm font-medium text-black hover:bg-neutral-50 hover:border-black transition-colors flex-1 md:flex-none justify-center cursor-pointer focus:outline-none"
-                        >
-                            <i className="fa-solid fa-filter"></i> Filter
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors flex-1 md:flex-none justify-center cursor-pointer focus:outline-none">
-                            <i className="fa-solid fa-plus"></i> Upload
-                        </button>
-                    </div>
-                </div>
-
-                <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col gap-3"}>
-                    {docs.map((doc, i) => (
-    <DocumentCard
-        key={i}
-        icon={doc.icon}
-        name={doc.name}
-        meta={doc.meta}
-        viewMode={viewMode}
-        onDelete={() => console.log("Delete:", doc.name)}
-    />
-))}
-                </div>
             </div>
 
-            {/* Filter Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                    <div className="bg-white rounded-xl w-full max-w-md shadow-lg animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center p-5 border-b border-gray-200">
-                            <h2 className="text-lg font-medium text-black">Filter Documents</h2>
-                            <button aria-label="Close filters" onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-neutral-100 rounded-md cursor-pointer transition-colors focus:outline-none">
-                                <i className="fa-solid fa-xmark" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <div className="p-6 flex flex-col gap-5">
-                            <div>
-                                <label htmlFor="file-type" className="block text-sm font-medium mb-2 text-black">File Type</label>
-                                <select id="file-type" aria-label="File Type" className="w-full p-2.5 text-black border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black bg-white cursor-pointer">
-                                    <option>All Types</option>
-                                    <option>PDF (.pdf)</option>
-                                    <option>Word (.docx)</option>
-                                    <option>Excel / CSV (.csv)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-black">Date Modified</label>
-                                <div className="flex gap-3">
-                                    <div className="flex-1">
-                                        <label htmlFor="start-date" className="block text-xs text-gray-500 mb-1 ">From</label>
-                                        <input
-                                            type="date"
-                                            id="start-date"
-                                            className="w-full p-2.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black bg-white cursor-pointer"
-                                        />
-                                    </div>
-                                    <div className="flex-1">
-                                        <label htmlFor="end-date" className="block text-xs text-gray-500 mb-1">To</label>
-                                        <input
-                                            type="date"
-                                            id="end-date"
-                                            className="w-full p-2.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black bg-white cursor-pointer"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-5 border-t border-gray-200 flex justify-end gap-3 bg-neutral-50 rounded-b-xl">
-                            <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-black transition-colors cursor-pointer focus:outline-none">Clear All</button>
-                            <button onClick={() => setShowModal(false)} className="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer focus:outline-none">Apply Filters</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <FilterModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+            />
         </div>
     );
 }
