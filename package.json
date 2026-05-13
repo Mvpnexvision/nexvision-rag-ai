@@ -1,0 +1,14 @@
+{
+  "name": "nexvision-rag",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:client dev:server",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && venv\\Scripts\\activate && fastapi dev main.py",
+    "install:all": "npm install && cd client && npm install && cd ../server && pip install -r requirements.txt"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
