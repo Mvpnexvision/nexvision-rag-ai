@@ -25,10 +25,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     >
                         <i className="fa-solid fa-bars" aria-hidden="true"></i>
                     </button>
-                    <div className="font-semibold flex items-center gap-2">
-                        <i className="fa-solid fa-layer-group" aria-hidden="true"></i>
-                        <span>DocuAI</span>
-                    </div>
                 </div>
 
                 {/* Main Content Area */}
