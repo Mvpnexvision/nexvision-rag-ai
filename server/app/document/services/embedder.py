@@ -77,7 +77,7 @@ async def embed_chunks(chunks: list[dict], batch_size: int = 10) -> list[dict]:
             ],
             config=types.EmbedContentConfig(
                 task_type="RETRIEVAL_DOCUMENT",
-                output_dimensionality=768,
+                output_dimensionality=1536,
             ),
         )
 
@@ -133,7 +133,7 @@ async def embed_single_text(text: str, task_type: str = "RETRIEVAL_QUERY") -> li
         contents=[types.Content(parts=[types.Part.from_text(text=text)])],
         config=types.EmbedContentConfig(
             task_type=task_type,
-            output_dimensionality=768,
+            output_dimensionality=1536,
         ),
     )
 

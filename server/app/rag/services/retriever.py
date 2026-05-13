@@ -22,6 +22,7 @@ async def retrieve_relevant_chunks(
     question: str,
     company_id: str,
     top_k: int = 5,
+    document_ids: list[str] | None = None,
 ) -> list[RetrievedChunk]:
     """
     Embed the user's question and retrieve the most relevant document chunks.
@@ -62,11 +63,11 @@ async def retrieve_relevant_chunks(
         question, task_type="RETRIEVAL_QUERY"
     )
 
-    # Step 2: Cosine similarity search in Supabase pgvector
     raw_chunks: list[dict] = await vector_search(
         query_embedding=query_vector,
         company_id=company_id,
         top_k=top_k,
+        document_ids=document_ids,
     )
 
     # Step 3: Map raw DB rows → typed RetrievedChunk models
