@@ -4,20 +4,23 @@ core/gemini_client.py
 Provides initialised Google Gemini API access for the entire server.
 
 Two capabilities used by NexVision:
-    1. Embeddings (text-embedding-004)
-       Converts text → a list of 768 floats (a vector).
-       Used by: Document Module (embed chunks), RAG Module (embed query).
+     1. Embeddings (text embedding model)
+         Converts text → a list of floats (a vector).
+         Used by: Document Module (embed chunks), RAG Module (embed query).
 
-    2. Generative chat (gemini-2.5-flash)
-       Reads context chunks and generates structured JSON answers.
-       Used by: RAG Module (answer generation).
+     2. Generative chat (gemini-2.5-flash)
+         Reads context chunks and generates structured JSON answers.
+         Used by: RAG Module (answer generation).
 
 Centralising the client here means API key config lives in one place
 and all modules share the same initialised SDK instance.
 """
 
-import google.genai as genai
+from google import genai
 from core.config import settings
+
+
+_client: genai.Client | None = None
 
 
 def init_gemini() -> None:
@@ -32,7 +35,18 @@ def init_gemini() -> None:
             "GEMINI_API_KEY must be set in your .env file. "
             "Get your key at https://aistudio.google.com/app/apikey"
         )
-    genai.configure(api_key=settings.GEMINI_API_KEY)
+    global _client
+    _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+
+def get_gemini_client() -> genai.Client:
+    """Return the shared Gemini client, initialising it if needed."""
+    global _client
+    if _client is None:
+        init_gemini()
+
+    assert _client is not None
+    return _client
 
 
 def get_embedding_model():
@@ -48,17 +62,16 @@ def get_embedding_model():
     return settings.GEMINI_EMBEDDING_MODEL
 
 
-def get_chat_model() -> genai.GenerativeModel:
+def get_chat_model():
     """
-    Return an initialised GenerativeModel for chat/reasoning tasks.
+    Return the shared `models` service from the Gemini client.
 
-    This model is used by the RAG module to take retrieved context chunks
-    and generate structured JSON insights.
+    Callers can use `generate_content(...)` on the returned object.
 
     Returns:
-        genai.GenerativeModel: ready-to-use Gemini chat model
+        Gemini models service.
     """
-    return genai.GenerativeModel(settings.GEMINI_CHAT_MODEL)
+    return get_gemini_client().models
 
 
 # Initialise on import so any module that does `from core.gemini_client import ...`

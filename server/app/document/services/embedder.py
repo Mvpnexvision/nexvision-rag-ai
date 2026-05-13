@@ -23,9 +23,10 @@ Rate limiting note:
 """
 
 import asyncio
-import google.genai as genai
-from core.config import settings
-from core.gemini_client import get_embedding_model
+
+from google.genai import types
+
+from core.gemini_client import get_embedding_model, get_gemini_client
 
 
 async def embed_chunks(chunks: list[dict], batch_size: int = 10) -> list[dict]:
@@ -53,6 +54,7 @@ async def embed_chunks(chunks: list[dict], batch_size: int = 10) -> list[dict]:
         embedded = await embed_chunks(chunks)
         # embedded[0]["embedding"] → [0.023, -0.441, 0.887, ...]
     """
+    client = get_gemini_client()
     model_name = get_embedding_model()
     embedded_chunks: list[dict] = []
 
@@ -67,20 +69,27 @@ async def embed_chunks(chunks: list[dict], batch_size: int = 10) -> list[dict]:
         # being indexed (as opposed to queries, which use RETRIEVAL_QUERY).
         # Using the correct task type improves retrieval accuracy.
         # ------------------------------------------------------------------
-        response = genai.embed_content(
+        response = client.models.embed_content(
             model=model_name,
-            content=texts,
-            task_type="RETRIEVAL_DOCUMENT",
+            contents=[
+                types.Content(parts=[types.Part.from_text(text=text)])
+                for text in texts
+            ],
+            config=types.EmbedContentConfig(
+                task_type="RETRIEVAL_DOCUMENT",
+                output_dimensionality=768,
+            ),
         )
 
-        # The response has an 'embedding' key with a list of vectors
-        # (one vector per input text)
-        if "embedding" not in response:
+        # The response now returns a list of embedding objects.
+        if not getattr(response, "embeddings", None):
             raise RuntimeError(
                 f"Gemini embedding API returned unexpected response: {response}"
             )
 
-        vectors: list[list[float]] = response["embedding"]
+        vectors: list[list[float]] = [
+            embedding.values for embedding in response.embeddings
+        ]
 
         # Merge the vector back into each chunk dict
         for chunk, vector in zip(batch, vectors):
@@ -116,17 +125,21 @@ async def embed_single_text(text: str, task_type: str = "RETRIEVAL_QUERY") -> li
         query_vector = await embed_single_text("What is our Q3 cash flow risk?")
         # → [0.031, -0.512, 0.774, ...]  (768 numbers)
     """
+    client = get_gemini_client()
     model_name = get_embedding_model()
 
-    response = genai.embed_content(
+    response = client.models.embed_content(
         model=model_name,
-        content=text,
-        task_type=task_type,
+        contents=[types.Content(parts=[types.Part.from_text(text=text)])],
+        config=types.EmbedContentConfig(
+            task_type=task_type,
+            output_dimensionality=768,
+        ),
     )
 
-    if "embedding" not in response:
+    if not getattr(response, "embeddings", None):
         raise RuntimeError(
             f"Gemini embedding API returned unexpected response: {response}"
         )
 
-    return response["embedding"]
+    return response.embeddings[0].values

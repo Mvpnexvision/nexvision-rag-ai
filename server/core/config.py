@@ -8,22 +8,43 @@ directly. This keeps configuration in one place and makes testing easy.
 """
 
 import os
-from dotenv import load_dotenv
 
-# Prefer the repo/server .env file over system env vars. If `.env` is missing
-# fall back to `.env.local`. Use `override=True` to ensure file values take
-# precedence over any variables set on the machine.
+
+def _load_env_file(file_path: str, override: bool = True) -> None:
+    """Load simple KEY=VALUE pairs from a dotenv-style file."""
+    if not os.path.exists(file_path):
+        return
+
+    with open(file_path, 'r', encoding='utf-8') as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+
+            if not line or line.startswith('#'):
+                continue
+
+            if '=' not in line:
+                continue
+
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+
+            if not key:
+                continue
+
+            if override or key not in os.environ:
+                os.environ[key] = value
+
+
+# Load project env files explicitly so the repo's values are used instead of
+# the computer's global environment. We load `.env` first, then `.env.local`
+# second so the local file can override defaults when both exist.
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-env_path = os.path.join(project_root, '.env')
-if not os.path.exists(env_path):
-    env_path = os.path.join(project_root, '.env.local')
+env_file = os.path.join(project_root, '.env')
+env_local_file = os.path.join(project_root, '.env.local')
 
-if os.path.exists(env_path):
-    load_dotenv(env_path, override=True)
-else:
-    # Last-resort: try default search (no override) so we don't accidentally
-    # hide system-wide configuration if no project file exists.
-    load_dotenv()
+_load_env_file(env_file, override=True)
+_load_env_file(env_local_file, override=True)
 
 
 class Settings:
