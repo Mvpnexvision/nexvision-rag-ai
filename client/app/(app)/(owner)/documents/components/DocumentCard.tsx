@@ -24,8 +24,8 @@ export default function DocumentCard({
             }`}
         >
             <i
-                className={`fa-solid ${icon} text-gray-500 ${
-                    viewMode === "grid" ? "text-3xl mb-1" : "text-xl"
+                className={`fa-solid ${icon} text-[#122F35] ${
+                    viewMode === "grid" ? "text-2xl mb-1" : "text-xl"
                 }`}
             />
 
