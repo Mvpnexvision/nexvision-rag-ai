@@ -11,9 +11,9 @@ Specified API surface (from product spec):
     POST   /documents/upload            ← Document Module
     POST   /documents/{id}/process      ← Document Module
     GET    /documents                   ← Document Module
-    POST   /ai/chat                     ← RAG Module
-    GET    /ai/questions                ← RAG Module
-    POST   /insights/generate           ← RAG Module (Insights)
+    POST   /ai/chat                     ← Reasoning Module
+    GET    /ai/questions                ← Reasoning Module
+    POST   /insights/generate           ← Reasoning Module (Insights)
     GET    /recommendations             ← Recommendation Module (future)
     PATCH  /recommendations/{id}        ← Recommendation Module (future)
     POST   /reports/generate            ← Reports Module (future)
@@ -30,7 +30,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from app.document.router import router as document_router
-from app.rag.router import router as rag_router
+from app.reasoning.router import router as reasoning_router
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -73,8 +73,8 @@ app.add_middleware(
 # Document Module: /documents/upload, /documents/{id}/process, GET /documents
 app.include_router(document_router, prefix="/documents", tags=["Document Module"])
 
-# RAG Module: /ai/chat, /ai/questions, /insights/generate
-app.include_router(rag_router, tags=["RAG & AI Module"])
+# Reasoning Module: /ai/chat, /ai/questions, /insights/generate
+app.include_router(reasoning_router, tags=["Reasoning Module"])
 
 
 # ---------------------------------------------------------------------------

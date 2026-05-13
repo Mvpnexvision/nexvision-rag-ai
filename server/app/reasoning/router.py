@@ -1,5 +1,5 @@
 """
-modules/rag_module/router.py
+modules/reasoning/router.py
 ============================
 RAG & AI Module — FastAPI Router
 
@@ -21,7 +21,7 @@ import uuid
 import json
 from fastapi import APIRouter, HTTPException, Query
 
-from app.rag.schemas import (
+from app.reasoning.schemas import (
     AIChatRequest,
     AIChatResponse,
     InsightGenerateRequest,
@@ -30,7 +30,7 @@ from app.rag.schemas import (
     AIQuestionRecord,
 )
 from app.rag.services.retriever import retrieve_relevant_chunks
-from app.rag.services.generator import generate_insight
+from app.reasoning.services.generator import generate_insight
 from core.supabase_client import get_supabase_client
 
 router = APIRouter()
