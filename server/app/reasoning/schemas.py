@@ -45,6 +45,7 @@ class AIChatRequest(BaseModel):
         description="Number of document chunks to retrieve. Higher = more context, slower.",
     )
 
+
 class InsightStatus(str, Enum):
     new = "New"
     in_review = "In Review"
@@ -56,13 +57,10 @@ class InsightStatus(str, Enum):
 class NexVisionInsight(BaseModel):
     """
     The structured AI insight — core output of NexVision.
-
-    Maps directly to the agreed JSON output contract and the `ai_questions`
-    table columns (answer = direct_answer, reasoning, recommendation, risk_level, sources_json).
+    Used by /ai/chat — original format per Section 12 of the spec.
 
     {
-         "title": "",
-         "direct_answer": "",
+        "direct_answer": "",
         "evidence_found": [],
         "reasoning": "",
         "recommendation": "",
@@ -70,14 +68,10 @@ class NexVisionInsight(BaseModel):
         "business_impact": "",
         "next_action": "",
         "missing_data": [],
-        "sources": [],
-        "suggested_deadline": "",
-        "status": "New"
-    } 
+        "sources": []
+    }
     """
-    title: str = Field(
-        default="Short issue title for the insight card e.g. Truck 03 PMS Overdue.",
-    )
+
     direct_answer: str = Field(
         ...,
         description="Concise 1–2 sentence answer to the user's question.",
@@ -114,13 +108,26 @@ class NexVisionInsight(BaseModel):
         ...,
         description="Citations: 'filename, page N' for every claim made.",
     )
+
+
+class NexVisionInsightCard(NexVisionInsight):
+    """
+    Extended insight — used by /insights/generate.
+    Adds AI Insights card fields per Section 15 of the spec.
+    Inherits all 9 fields from NexVisionInsight and adds 3 more.
+    """
+
+    title: str = Field(
+        default="",
+        description="Short issue title e.g. Truck 03 PMS Overdue.",
+    )
     suggested_deadline: str = Field(
         default="",
         description="When action should be taken e.g. Within 3 days.",
     )
     status: InsightStatus = Field(
         default=InsightStatus.new,
-        description="Insight card status: New, In Review, Accepted, Rejected, or Completed.",
+        description="New, In Review, Accepted, Rejected, or Completed.",
     )
 
 
@@ -206,6 +213,6 @@ class InsightGenerateResponse(BaseModel):
     question_id: str = Field(..., description="UUID of the saved ai_questions record")
     topic: str
     company_id: str
-    insight: NexVisionInsight
+    insight: NexVisionInsightCard
     chunks_used: int
     message: str
