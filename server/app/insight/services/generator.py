@@ -61,7 +61,6 @@ The JSON must exactly match this schema:
     "Filename.pdf, page 4",
     "Spreadsheet.xlsx, Sheet: Revenue, page N/A"
   ],
-  "suggested_due_date": "YYYY-MM-DD or null — suggest a due date to make a decision based on urgency implied by the question and context"
 }
 """.strip()
 

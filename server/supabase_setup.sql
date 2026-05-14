@@ -327,7 +327,6 @@ comment on table ai_questions is
     'Stores the complete AI output (all 10 JSON fields). '
     'has_insight = true means the AI had enough data to generate an '
     'actionable recommendation — a recommendations row is created for these. '
-    'suggested_due_date is AI-inferred from urgency in the question context.';
 
 create index if not exists ai_questions_chat_idx     on ai_questions (chat_id);
 create index if not exists ai_questions_company_idx  on ai_questions (company_id);
@@ -394,19 +393,3 @@ comment on table reports is
 
 create index if not exists reports_company_idx on reports (company_id);
 create index if not exists reports_type_idx    on reports (report_type);
-
-
--- ============================================================
--- MIGRATION NOTES (v4 → v5)
--- Run these if you have an existing v4 database.
--- Skip entirely if running fresh.
--- ============================================================
-
--- Step 1: Add suggested_due_date to ai_questions
--- alter table ai_questions add column if not exists suggested_due_date text;
-
--- Step 2: Remove unused columns from recommendations
--- alter table recommendations
---     drop column if exists assigned_to,
---     drop column if exists due_date,
---     drop column if exists notes;
