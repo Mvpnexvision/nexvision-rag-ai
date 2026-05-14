@@ -8,8 +8,10 @@ interface ChatInputProps {
     attachedFiles: AttachedFile[];
     onRemoveFile: (id: string) => void;
     onFilesSelected: (files: File[]) => void;
+    onValidationError?: (message: string) => void;
     disabled?: boolean;
     sending?: boolean;
+    isEmptyState?: boolean;
 }
 
 export default function ChatInput({
@@ -17,19 +19,38 @@ export default function ChatInput({
     attachedFiles,
     onRemoveFile,
     onFilesSelected,
+    onValidationError,
     disabled = false,
     sending = false,
+    isEmptyState = false,
 }: ChatInputProps) {
     const [inputValue, setInputValue] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // On empty state, a document must be attached before sending
+    const requiresFile = isEmptyState && attachedFiles.length === 0;
+
     const handleSend = async () => {
-        if (!inputValue.trim() || disabled || sending) {
+        if (disabled || sending) return;
+
+        if (requiresFile && !inputValue.trim()) {
+            onValidationError?.("Please upload a document and enter a question first.");
             return;
         }
 
-        await onSendMessage(inputValue);
+        if (requiresFile) {
+            onValidationError?.("Please upload a document before sending a question.");
+            return;
+        }
+
+        if (!inputValue.trim()) {
+            onValidationError?.("Please enter a question before sending.");
+            return;
+        }
+
+        const text = inputValue;
         setInputValue("");
+        await onSendMessage(text);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -106,7 +127,7 @@ export default function ChatInput({
                 <button
                     aria-label="Send message"
                     onClick={() => void handleSend()}
-                    disabled={!inputValue.trim() || disabled || sending}
+                    disabled={disabled || sending}
                     className="w-9 h-9 flex items-center justify-center bg-black text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shrink-0"
                 >
                     {sending ? (
@@ -123,3 +144,14 @@ export default function ChatInput({
         </div>
     );
 }
+
+
+
+
+
+
+
+
+
+
+

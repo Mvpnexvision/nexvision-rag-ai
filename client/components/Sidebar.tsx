@@ -47,7 +47,7 @@ export default function Sidebar({
     { name: "Dashboard", path: "/dashboard", icon: "fa-border-all" },
     { name: "AI Chat", path: "/chat", icon: "fa-message" },
     { name: "Documents", path: "/documents", icon: "fa-folder-open" },
-    // { name: "Recommendations", path: "/recommendations", icon: "fa-circle-info" },
+    { name: "Recommendations", path: "/recommendations", icon: "fa-circle-info" },
   ];
 
   const superadminNav: NavCategory[] = [

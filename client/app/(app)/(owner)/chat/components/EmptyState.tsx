@@ -46,7 +46,7 @@ export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
                         Click to upload <span className="font-normal text-gray-500">or drag and drop</span>
                     </p>
                     <p className="text-xs text-gray-500">
-                        Supports PDF, DOCX, XLSX, TXT, and CSV (max. 50MB)
+                        Supports PDF, DOCX, XLSX, TXT, and CSV (max. 20MB)
                     </p>
                 </div>
 
@@ -64,3 +64,14 @@ export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
         </div>
     );
 }
+
+
+
+
+
+
+
+
+
+
+
