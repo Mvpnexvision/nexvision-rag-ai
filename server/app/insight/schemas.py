@@ -195,6 +195,23 @@ class AIChatResponse(BaseModel):
         description="Number of document chunks retrieved from the vector database.",
     )
 
+class ChatListItem(BaseModel):
+    chat_id: str
+    title: str
+    company_id: str
+    user_id: str
+    document_ids: list[str]
+    created_at: str
+    updated_at: str
+
+class ChatListResponse(BaseModel):
+    user_id: str
+    company_id: str
+    chats: list[ChatListItem]
+    total: int
+    limit: int
+    offset: int
+
 
 # ── Question history ───────────────────────────────────────────────────────────
 
