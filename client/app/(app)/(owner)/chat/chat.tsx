@@ -9,6 +9,10 @@ import { useAuth } from "@/contexts/authContext";
 import {
     AIOutput,
     CreateChatResponse,
+    ChatListItem,
+    ChatListResponse,
+    AIQuestionRecord,
+    AIQuestionsListResponse,
     useChatWorkflowApi,
 } from "@/hooks/useChatWorkflowApi";
 import {
@@ -28,6 +32,7 @@ export interface Message {
     role: "user" | "assistant" | "system";
     content: React.ReactNode;
     attachedFiles?: AttachedFile[];
+    isFromServer?: boolean;
 }
 
 export interface AttachedFile {
@@ -53,6 +58,47 @@ const CHAT_HISTORY = [
         group: "Previous 7 Days",
     },
 ] as const;
+
+type GroupedChats = {
+    [key: string]: ChatListItem[];
+};
+
+function groupChatsByTime(chats: ChatListItem[]): GroupedChats {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const grouped: GroupedChats = {
+        Today: [],
+        Yesterday: [],
+        "Previous 7 Days": [],
+        Older: [],
+    };
+
+    chats.forEach((chat) => {
+        const chatDate = new Date(chat.updated_at);
+        const chatDateOnly = new Date(
+            chatDate.getFullYear(),
+            chatDate.getMonth(),
+            chatDate.getDate()
+        );
+
+        if (chatDateOnly.getTime() === today.getTime()) {
+            grouped["Today"].push(chat);
+        } else if (chatDateOnly.getTime() === yesterday.getTime()) {
+            grouped["Yesterday"].push(chat);
+        } else if (chatDateOnly.getTime() >= sevenDaysAgo.getTime()) {
+            grouped["Previous 7 Days"].push(chat);
+        } else {
+            grouped["Older"].push(chat);
+        }
+    });
+
+    return grouped;
+}
 
 function toIcon(fileName: string): string {
     const ext = fileName.split(".").pop()?.toLowerCase();
@@ -120,6 +166,9 @@ export default function Chat() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
     const [isCreatingChat, setIsCreatingChat] = useState(false);
+    const [chats, setChats] = useState<ChatListItem[]>([]);
+    const [loadingChats, setLoadingChats] = useState(false);
+    const [loadingMessages, setLoadingMessages] = useState(false);
 
     /**
      * Holds the AbortController that cancels all in-flight document polls.
@@ -134,6 +183,8 @@ export default function Chat() {
         uploadDocument,
         linkDocumentsToChat,
         sendAIChat,
+        listChats,
+        getChatMessages,
     } = useChatWorkflowApi();
     const { processAndPoll } = useDocumentPolling();
 
@@ -170,15 +221,36 @@ export default function Chat() {
         void loadStagedFiles();
     }, [showToast]);
 
-    // ── Create a real chat session once the user is authenticated ─────────
+    // ── Fetch chats and ensure a chat is selected ─────────────────────────
     useEffect(() => {
-        const ensureRealChat = async () => {
-            if (authLoading || isCreatingChat || selectedChatId) return;
-            if (!user?.id || !companyId) return;
+        const initializeChat = async () => {
+            if (authLoading || !companyId || !user?.id) return;
+            if (selectedChatId) return; // Already have a chat selected
 
-            setIsCreatingChat(true);
+            setLoadingChats(true);
 
             try {
+                const response: ChatListResponse = await listChats({
+                    companyId,
+                    limit: 50,
+                });
+
+                setChats(response.chats);
+
+                // Check if we can reuse the latest "New Chat"
+                if (response.chats.length > 0) {
+                    const latestChat = response.chats[0]; // First one is most recent (ordered by updated_at DESC)
+
+                    // Reuse if it's a "New Chat" (not used yet)
+                    if (latestChat.title === "New Chat") {
+                        setSelectedChatId(latestChat.chat_id);
+                        setLoadingChats(false);
+                        return;
+                    }
+                }
+
+                // Otherwise create a new chat
+                setIsCreatingChat(true);
                 const createdChat: CreateChatResponse = await createChat({
                     companyId,
                     userId: user.id,
@@ -186,15 +258,78 @@ export default function Chat() {
                 });
 
                 setSelectedChatId(createdChat.chat_id);
+                // Append the newly created chat to the list
+                setChats((prev) => [
+                    {
+                        chat_id: createdChat.chat_id,
+                        title: createdChat.title,
+                        company_id: createdChat.company_id,
+                        user_id: user.id,
+                        document_ids: [],
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    },
+                    ...prev,
+                ]);
             } catch (error) {
-                console.error("Failed to create chat session:", error);
+                console.error("Failed to initialize chat:", error);
+                setChats([]);
             } finally {
                 setIsCreatingChat(false);
+                setLoadingChats(false);
             }
         };
 
-        void ensureRealChat();
-    }, [authLoading, companyId, createChat, isCreatingChat, selectedChatId, showToast, user?.id]);
+        void initializeChat();
+    }, [authLoading, companyId, user?.id, selectedChatId]);
+
+    // ── Fetch messages when a chat is selected ─────────────────────────────
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!selectedChatId || selectedChatId.startsWith("existing-chat-")) return;
+
+            setLoadingMessages(true);
+
+            try {
+                const response: AIQuestionsListResponse = await getChatMessages(selectedChatId);
+
+                // Transform AI question records into Message objects
+                const chatMessages: Message[] = response.questions.flatMap((question) => [
+                    {
+                        id: `${question.id}-user`,
+                        role: "user" as const,
+                        content: question.question,
+                        isFromServer: true,
+                    },
+                    {
+                        id: question.id,
+                        role: "assistant" as const,
+                        content: formatAIResponse({
+                            direct_answer: question.answer,
+                            evidence_found: question.evidence_found,
+                            reasoning: question.reasoning,
+                            recommendation: question.recommendation,
+                            risk_level: question.risk_level as AIOutput["risk_level"],
+                            business_impact: question.business_impact,
+                            next_action: question.next_action,
+                            missing_data: question.missing_data,
+                            sources: question.sources_json,
+                        }),
+                        isFromServer: true,
+                    },
+                ]);
+
+                setMessages(chatMessages);
+            } catch (error) {
+                console.error("Failed to fetch chat messages:", error);
+                setMessages([]);
+            } finally {
+                setLoadingMessages(false);
+            }
+        };
+
+        void fetchMessages();
+    }, [selectedChatId]);
 
     // ── Message helpers ───────────────────────────────────────────────────
 
@@ -451,54 +586,65 @@ export default function Chat() {
             <div className="w-64 bg-neutral-50 border-r border-gray-200 flex flex-col h-full shrink-0">
                 <div className="p-4 font-semibold text-sm border-b border-gray-200 flex items-center justify-between">
                     <span>Chat History</span>
-                    <button
-                        aria-label="Create new chat"
-                        title="Create new chat"
-                        className="text-gray-500 hover:text-black"
-                    >
-                        <i className="fa-solid fa-pen-to-square"></i>
-                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                    {["Today", "Yesterday", "Previous 7 Days"].map((groupName) => {
-                        const entries = CHAT_HISTORY.filter((item) => item.group === groupName);
-                        if (entries.length === 0) return null;
+                    {loadingChats ? (
+                        <div className="text-xs text-gray-500 px-2 py-4 text-center">
+                            Loading chats...
+                        </div>
+                    ) : chats.length === 0 ? (
+                        <div className="text-xs text-gray-500 px-2 py-4 text-center">
+                            No chats yet
+                        </div>
+                    ) : (
+                        Object.entries(groupChatsByTime(chats)).map(
+                            ([groupName, groupChats]) => {
+                                if (groupChats.length === 0) return null;
 
-                        return (
-                            <div key={groupName}>
-                                <div className="text-xs text-gray-500 font-medium px-2 mb-2">
-                                    {groupName}
-                                </div>
-                                <div className="space-y-1.5">
-                                    {entries.map((item) => (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            onClick={() => {
-                                                showToast({
-                                                    message: "Chat history is currently a visual placeholder.",
-                                                    type: "info",
-                                                });
-                                            }}
-                                            className={`w-full text-left px-3 py-2 text-sm rounded-lg truncate transition-colors ${selectedChatId === item.id
-                                                    ? "bg-neutral-200"
-                                                    : "hover:bg-neutral-200"
-                                                }`}
-                                        >
-                                            {item.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
+                                return (
+                                    <div key={groupName}>
+                                        <div className="text-xs text-gray-500 font-medium px-2 mb-2">
+                                            {groupName}
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            {groupChats.map((chat) => (
+                                                <button
+                                                    key={chat.chat_id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedChatId(chat.chat_id);
+                                                        setMessages([]);
+                                                    }}
+                                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg truncate transition-colors ${selectedChatId === chat.chat_id
+                                                        ? "bg-neutral-200"
+                                                        : "hover:bg-neutral-200"
+                                                        }`}
+                                                    title={chat.title}
+                                                >
+                                                    {chat.title}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            }
+                        )
+                    )}
                 </div>
             </div>
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col h-full relative">
                 <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 max-w-4xl mx-auto w-full">
-                    {messages.length === 0 ? (
+                    {loadingMessages && messages.length === 0 ? (
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                                <div className="inline-block">
+                                    <i className="fa-solid fa-spinner fa-spin text-4xl text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                    ) : messages.length === 0 ? (
                         <EmptyState onFilesSelected={handleFilesSelected} />
                     ) : (
                         messages.map((msg) => (
@@ -507,6 +653,7 @@ export default function Chat() {
                                 role={msg.role}
                                 content={msg.content}
                                 attachedFiles={msg.attachedFiles}
+                                isFromServer={msg.isFromServer}
                             />
                         ))
                     )}
