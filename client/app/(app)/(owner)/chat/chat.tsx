@@ -18,10 +18,7 @@ export interface AttachedFile {
 }
 
 export default function Chat() {
-    // Start empty to show the Empty State first
     const [messages, setMessages] = useState<Message[]>([]);
-
-    // Initializing with the file from your mockup
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([
         { id: "1", name: "Project_Requirements_v2.docx", icon: "fa-file-word" }
     ]);
@@ -42,16 +39,8 @@ export default function Chat() {
             const newAiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: "assistant",
-                content: (
-                    <>
-                        Based on the context provided in <strong>Project_Requirements_v2.docx</strong>, here are the primary milestones for Phase 1: <br /><br />
-                        1. Finalize UI/UX wireframes (Due: Oct 15)<br />
-                        2. Setup database schema and Next.js boilerplate (Due: Oct 20)<br />
-                        3. Implement secure authentication (Due: Oct 25)<br />
-                        <br />
-                        Would you like me to detail the deliverables for Phase 2?
-                    </>
-                )
+                // Using a plain string with newlines to allow the typing animation to work smoothly
+                content: `Based on the context provided in Project_Requirements_v2.docx, here are the primary milestones for Phase 1:\n\n1. Finalize UI/UX wireframes (Due: Oct 15)\n2. Setup database schema and Next.js boilerplate (Due: Oct 20)\n3. Implement secure authentication (Due: Oct 25)\n\nWould you like me to detail the deliverables for Phase 2?`
             };
             setMessages((prev) => [...prev, newAiMsg]);
         }, 600);
@@ -62,25 +51,63 @@ export default function Chat() {
     };
 
     return (
-        <div className="flex flex-col h-full w-full max-w-4xl mx-auto relative text-black">
+        <div className="flex h-screen w-full bg-white text-black overflow-hidden">
 
-            {/* Thread or Empty State */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-                {messages.length === 0 ? (
-                    <EmptyState onSuggestionClick={handleSendMessage} />
-                ) : (
-                    messages.map((msg) => (
-                        <ChatMessage key={msg.id} role={msg.role} content={msg.content} />
-                    ))
-                )}
+            {/* Sidebar (Chat History) */}
+            <div className="w-64 bg-neutral-50 border-r border-gray-200 flex flex-col h-full shrink-0">
+                <div className="p-4 font-semibold text-sm border-b border-gray-200 flex items-center justify-between">
+                    <span>Chat History</span>
+                    <button
+                        aria-label="Create new chat"
+                        title="Create new chat"
+                        className="text-gray-500 hover:text-black"
+                    >
+                        <i className="fa-solid fa-pen-to-square"></i>
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                    <div>
+                        <div className="text-xs text-gray-500 font-medium px-2 mb-2">Today</div>
+                        <button className="w-full text-left px-3 py-2 text-sm bg-neutral-200 rounded-lg truncate">
+                            Project Requirements Analysis
+                        </button>
+                    </div>
+                    <div>
+                        <div className="text-xs text-gray-500 font-medium px-2 mb-2">Yesterday</div>
+                        <button className="w-full text-left px-3 py-2 text-sm hover:bg-neutral-200 rounded-lg truncate transition-colors">
+                            Q3 Financial Report
+                        </button>
+                    </div>
+                    <div>
+                        <div className="text-xs text-gray-500 font-medium px-2 mb-2">Previous 7 Days</div>
+                        <button className="w-full text-left px-3 py-2 text-sm hover:bg-neutral-200 rounded-lg truncate transition-colors">
+                            Marketing Strategy 2024
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            {/* Input Area */}
-            <ChatInput
-                onSendMessage={handleSendMessage}
-                attachedFiles={attachedFiles}
-                onRemoveFile={handleRemoveFile}
-            />
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col h-full relative">
+                <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6 max-w-4xl mx-auto w-full">
+                    {messages.length === 0 ? (
+                        <EmptyState />
+                    ) : (
+                        messages.map((msg) => (
+                            <ChatMessage key={msg.id} role={msg.role} content={msg.content} />
+                        ))
+                    )}
+                </div>
+
+                {/* Input Area Wrapper */}
+                <div className="max-w-4xl mx-auto w-full">
+                    <ChatInput
+                        onSendMessage={handleSendMessage}
+                        attachedFiles={attachedFiles}
+                        onRemoveFile={handleRemoveFile}
+                    />
+                </div>
+            </div>
         </div>
     );
 }

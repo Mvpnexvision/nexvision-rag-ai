@@ -53,9 +53,6 @@ export default function DocumentToolbar({ viewMode, setViewMode, onOpenFilter }:
                 >
                     <i className="fa-solid fa-filter"></i> Filter
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors flex-1 md:flex-none justify-center cursor-pointer focus:outline-none">
-                    <i className="fa-solid fa-plus"></i> Upload
-                </button>
             </div>
         </div>
     );
