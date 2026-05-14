@@ -1,29 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AttachedFile } from "../chat";
 
 interface ChatInputProps {
-    onSendMessage: (text: string) => void;
+    onSendMessage: (text: string) => void | Promise<void>;
     attachedFiles: AttachedFile[];
     onRemoveFile: (id: string) => void;
+    onFilesSelected: (files: File[]) => void;
+    onValidationError?: (message: string) => void;
+    disabled?: boolean;
+    sending?: boolean;
+    isEmptyState?: boolean;
 }
 
-export default function ChatInput({ onSendMessage, attachedFiles, onRemoveFile }: ChatInputProps) {
+export default function ChatInput({
+    onSendMessage,
+    attachedFiles,
+    onRemoveFile,
+    onFilesSelected,
+    onValidationError,
+    disabled = false,
+    sending = false,
+    isEmptyState = false,
+}: ChatInputProps) {
     const [inputValue, setInputValue] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleSend = () => {
-        if (inputValue.trim()) {
-            onSendMessage(inputValue);
-            setInputValue("");
+    // On empty state, a document must be attached before sending
+    const requiresFile = isEmptyState && attachedFiles.length === 0;
+
+    const handleSend = async () => {
+        if (disabled || sending) return;
+
+        if (requiresFile && !inputValue.trim()) {
+            onValidationError?.("Please upload a document and enter a question first.");
+            return;
         }
+
+        if (requiresFile) {
+            onValidationError?.("Please upload a document before sending a question.");
+            return;
+        }
+
+        if (!inputValue.trim()) {
+            onValidationError?.("Please enter a question before sending.");
+            return;
+        }
+
+        const text = inputValue;
+        setInputValue("");
+        await onSendMessage(text);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey) {
+        if (e.key === "Enter" && !e.shiftKey && !disabled && !sending) {
             e.preventDefault();
-            handleSend();
+            void handleSend();
         }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) {
+            return;
+        }
+
+        onFilesSelected(Array.from(e.target.files));
+        e.target.value = "";
     };
 
     return (
@@ -49,9 +92,26 @@ export default function ChatInput({ onSendMessage, attachedFiles, onRemoveFile }
 
             {/* Input Box */}
             <div className="bg-white border border-gray-200 rounded-xl flex items-end p-2 shadow-sm focus-within:border-black transition-colors">
-                <button aria-label="Attach file" className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-neutral-100 rounded-md transition-colors shrink-0">
+                <button
+                    aria-label="Attach file"
+                    type="button"
+                    disabled={disabled || sending}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-neutral-100 rounded-md transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                     <i className="fa-solid fa-paperclip" aria-hidden="true"></i>
                 </button>
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.xlsx,.txt,.csv"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                    aria-label="Attach chat documents"
+                    title="Attach chat documents"
+                />
 
                 <textarea
                     placeholder="Ask a question about your documents..."
@@ -59,17 +119,22 @@ export default function ChatInput({ onSendMessage, attachedFiles, onRemoveFile }
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
+                    disabled={disabled || sending}
                     aria-label="Message input"
                     className="flex-1 border-none resize-none p-2 text-sm outline-none bg-transparent max-h-36 min-h-9"
                 ></textarea>
 
                 <button
                     aria-label="Send message"
-                    onClick={handleSend}
-                    disabled={!inputValue.trim()}
+                    onClick={() => void handleSend()}
+                    disabled={disabled || sending}
                     className="w-9 h-9 flex items-center justify-center bg-black text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors shrink-0"
                 >
-                    <i className="fa-solid fa-arrow-up" aria-hidden="true"></i>
+                    {sending ? (
+                        <i className="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                    ) : (
+                        <i className="fa-solid fa-arrow-up" aria-hidden="true"></i>
+                    )}
                 </button>
             </div>
 
@@ -79,3 +144,14 @@ export default function ChatInput({ onSendMessage, attachedFiles, onRemoveFile }
         </div>
     );
 }
+
+
+
+
+
+
+
+
+
+
+
