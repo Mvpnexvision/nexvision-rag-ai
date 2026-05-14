@@ -36,9 +36,13 @@ create extension if not exists "uuid-ossp";
 create table if not exists companies (
     id            uuid primary key default gen_random_uuid(),
     company_name  text not null,
-    business_line text,
+    business_line text not null default 'custom business',
     industry      text,
     created_at    timestamptz default now()
+
+    constraint companies_business_line_check check (
+        business_line in ('hr/admin', 'logistics', 'retail', 'clinic/aesthetic', 'construction/equipment', 'custom business')
+    ),
 );
 
 comment on table companies is
@@ -53,9 +57,16 @@ create table if not exists users (
     company_id    uuid not null references companies(id) on delete cascade,
     name          text not null,
     email         text not null unique,
-    role          text not null default 'viewer',   -- 'admin' | 'analyst' | 'viewer'
-    status        text not null default 'active',   -- 'active' | 'inactive' | 'suspended'
+    role          text not null default 'admin',   -- 'superadmin' | 'admin'
+    status        text not null default 'active',   -- 'active' | 'inactive'
     created_at    timestamptz default now()
+
+    constraint users_role_check check (
+        role in ('superadmin', 'admin')
+    ),
+    constraint users_status_check check (
+        status in ('active', 'inactive')
+    )
 );
 
 comment on table users is
@@ -286,7 +297,7 @@ create table if not exists recommendations (
     risk_level       text not null,
     business_impact  text,
     next_action      text,
-    status           text not null default 'pending',
+    status           text not null default 'new',
     created_by_ai    boolean default true,
     created_at       timestamptz default now(),
 
@@ -294,7 +305,7 @@ create table if not exists recommendations (
         risk_level in ('Low', 'Medium', 'High', 'Critical')
     ),
     constraint recommendations_status_check check (
-        status in ('pending', 'in_progress', 'resolved', 'dismissed')
+        status in ('new', 'in_review', 'accepted', 'rejected', 'completed')
     )
 );
 
@@ -318,21 +329,3 @@ create table if not exists reports (
 
 create index if not exists reports_company_idx on reports (company_id);
 create index if not exists reports_type_idx    on reports (report_type);
-
-
--- ------------------------------------------------------------
--- Table: structured_records
--- ------------------------------------------------------------
-create table if not exists structured_records (
-    id             uuid primary key default gen_random_uuid(),
-    company_id     uuid not null references companies(id) on delete cascade,
-    business_line  text,
-    record_type    text not null,
-    record_json    jsonb not null,
-    created_at     timestamptz default now()
-);
-
-create index if not exists structured_records_company_idx on structured_records (company_id);
-create index if not exists structured_records_type_idx    on structured_records (record_type);
-create index if not exists structured_records_json_idx
-    on structured_records using gin (record_json);
