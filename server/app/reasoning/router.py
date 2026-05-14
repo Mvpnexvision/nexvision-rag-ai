@@ -1,5 +1,5 @@
 """
-modules/reasoning/router.py
+app/reasoning/router.py
 ============================
 RAG & AI Module — FastAPI Router
 
@@ -97,7 +97,7 @@ async def _save_ai_question(
         "The core NexVision RAG endpoint. Submits a business question and receives "
         "a structured AI insight grounded in the company's uploaded documents.\n\n"
         "**Full pipeline (per call):**\n"
-        "1. Embed question → 1536-float vector (Gemini text-embedding-004)\n"
+        "1. Embed question → 1536-float vector (Gemini gemini-embedding-001)\n"
         "2. Cosine similarity search → top-K chunks (Supabase pgvector)\n"
         "3. Build prompt: system rules + chunks + question\n"
         "4. Gemini generates structured JSON insight\n"

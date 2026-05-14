@@ -1,5 +1,5 @@
 """
-modules/document_module/schemas.py
+app/document/schemas.py
 ====================================
 Request and response schemas for the Document Module.
 

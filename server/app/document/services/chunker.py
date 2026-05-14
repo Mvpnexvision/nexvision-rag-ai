@@ -1,5 +1,5 @@
 """
-modules/document_module/services/chunker.py
+app/document/services/chunker.py
 ===========================================
 STAGE 2 of the document pipeline: Chunk
 

@@ -1,5 +1,5 @@
 """
-modules/rag_module/schemas.py
+app/reasoning/schemas.py
 ==============================
 Request and response schemas for the RAG Module.
 

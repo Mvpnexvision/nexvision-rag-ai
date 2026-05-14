@@ -1,5 +1,5 @@
 """
-modules/document_module/services/vector_store.py
+app/document/services/vector_store.py
 =================================================
 STAGE 4 of the document pipeline: Store
 STAGE 5 of the RAG pipeline: Retrieve

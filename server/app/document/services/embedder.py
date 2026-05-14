@@ -1,10 +1,10 @@
 """
-modules/document_module/services/embedder.py
+app/document/services/embedder.py
 ============================================
 STAGE 3 of the document pipeline: Embed
 
 Responsibility: Convert each text chunk into a 768-dimensional vector
-using Google's text-embedding-004 model via the Gemini API.
+using Google's gemini-embedding-001 model via the Gemini API.
 
 What is an embedding?
     An embedding is a list of numbers (a vector) that encodes the *meaning*
@@ -12,7 +12,7 @@ What is an embedding?
     close to each other. This is what allows the vector database to find
     "semantically related" chunks for a query, rather than doing keyword matching.
 
-text-embedding-004 output:
+gemini-embedding-001 output:
     768 floats per chunk.
     Example: "Q3 revenue declined" → [0.023, -0.441, 0.887, ...(768 total)]
 
