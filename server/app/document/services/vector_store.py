@@ -241,8 +241,8 @@ async def list_company_documents(company_id: str) -> list[dict]:
     result = (
         sb.table("documents")
         .select(
-            "id, company_id, uploaded_by, file_name, file_type, file_url, tags,"
-            "processing_status, summary, created_at"
+            "id, company_id, uploaded_by, file_name, file_type, file_url, tags, "
+            "processing_status, summary, is_context_file, created_at"
         )
         .eq("company_id", company_id)
         .order("created_at", desc=True)
