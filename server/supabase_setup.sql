@@ -38,11 +38,11 @@ create table if not exists companies (
     company_name  text not null,
     business_line text not null default 'custom business',
     industry      text,
-    created_at    timestamptz default now()
+    created_at    timestamptz default now(),
 
     constraint companies_business_line_check check (
         business_line in ('hr/admin', 'logistics', 'retail', 'clinic/aesthetic', 'construction/equipment', 'custom business')
-    ),
+    )
 );
 
 comment on table companies is
@@ -57,9 +57,9 @@ create table if not exists users (
     company_id    uuid not null references companies(id) on delete cascade,
     name          text not null,
     email         text not null unique,
-    role          text not null default 'admin',   -- 'superadmin' | 'admin'
-    status        text not null default 'active',   -- 'active' | 'inactive'
-    created_at    timestamptz default now()
+    role          text not null default 'admin',
+    status        text not null default 'active',
+    created_at    timestamptz default now(),
 
     constraint users_role_check check (
         role in ('superadmin', 'admin')
@@ -157,7 +157,7 @@ create or replace function match_documents(
     query_embedding  vector(1536),
     match_count      int,
     filter_company   text,
-    filter_documents  uuid[] default null   -- optional: scope to specific document IDs
+    filter_documents  uuid[] default null
 )
 returns table (
     id             uuid,
@@ -183,8 +183,8 @@ as $$
     from document_chunks
     where company_id = filter_company::uuid
       and (
-          filter_documents is null              -- no filter = search all company docs
-          or document_id = ANY(filter_documents) -- filter = search only chat's docs
+          filter_documents is null
+          or document_id = any(filter_documents)
       )
     order by embedding <=> query_embedding
     limit match_count;
@@ -203,19 +203,14 @@ comment on function match_documents is
 
 -- ------------------------------------------------------------
 -- Table: ai_chats
--- One row per conversation session (like a Claude or ChatGPT thread).
--- A chat belongs to one user and one company.
--- Documents are linked via ai_chat_documents (many-to-many).
--- All messages (ai_questions) in a chat share the same document context.
 -- ------------------------------------------------------------
 create table if not exists ai_chats (
     id          uuid primary key default gen_random_uuid(),
     company_id  uuid not null references companies(id) on delete cascade,
     user_id     uuid not null references users(id) on delete cascade,
     title       text not null default 'New Chat',
-                                            -- auto-generated from first message or user-defined
     created_at  timestamptz default now(),
-    updated_at  timestamptz default now()   -- bumped on every new message
+    updated_at  timestamptz default now()
 );
 
 comment on table ai_chats is
@@ -229,10 +224,6 @@ create index if not exists ai_chats_updated_idx on ai_chats (updated_at desc);
 
 -- ------------------------------------------------------------
 -- Table: ai_chat_documents
--- Junction table — links documents to a chat as context sources.
--- A chat can have many documents; a document can appear in many chats.
--- The RAG retriever filters vector search to only these document IDs
--- when answering questions in that chat.
 -- ------------------------------------------------------------
 create table if not exists ai_chat_documents (
     id          uuid primary key default gen_random_uuid(),
@@ -240,7 +231,6 @@ create table if not exists ai_chat_documents (
     document_id uuid not null references documents(id) on delete cascade,
     added_at    timestamptz default now(),
 
-    -- prevent the same document being added to the same chat twice
     constraint ai_chat_documents_unique unique (chat_id, document_id)
 );
 
@@ -254,20 +244,17 @@ create index if not exists ai_chat_documents_document_idx on ai_chat_documents (
 
 -- ------------------------------------------------------------
 -- Table: ai_questions
--- One row per message exchange (user question + AI answer).
--- Now linked to a chat via chat_id so messages belong to a thread.
 -- ------------------------------------------------------------
 create table if not exists ai_questions (
     id              uuid primary key default gen_random_uuid(),
     chat_id         uuid references ai_chats(id) on delete cascade,
-                                            -- nullable for backwards compat with direct /ai/chat calls
     company_id      uuid not null references companies(id) on delete cascade,
     user_id         uuid references users(id) on delete set null,
     question        text not null,
     answer          text,
     reasoning       text,
     recommendation  text,
-    risk_level      text,                   -- 'Low' | 'Medium' | 'High' | 'Critical'
+    risk_level      text,
     sources_json    jsonb,
     created_at      timestamptz default now()
 );
