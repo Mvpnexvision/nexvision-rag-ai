@@ -96,9 +96,6 @@ async def store_document_record(
     file_name: str,
     file_type: str,
     file_url: str,
-    business_line: str | None = None,
-    department: str | None = None,
-    category: str | None = None,
     tags: list[str] | None = None,
 ) -> None:
     """
@@ -114,12 +111,11 @@ async def store_document_record(
         file_name:     Original filename (e.g. "Q3_Report.pdf").
         file_type:     Normalised format string (e.g. "PDF", "DOCX").
         file_url:      Supabase Storage path returned by the storage service.
-        business_line: Optional business line classification.
-        department:    Optional department label.
-        category:      Optional document category.
         tags:          Optional list of tags for search/filtering.
     """
     sb = get_supabase_client()
+
+    is_context = file_name.rsplit(".", 1)[-1].lower() == "md" if "." in file_name else False
 
     sb.table("documents").upsert(
         {
@@ -129,11 +125,9 @@ async def store_document_record(
             "file_name": file_name,
             "file_type": file_type,
             "file_url": file_url,
-            "business_line": business_line,
-            "department": department,
-            "category": category,
             "tags": tags or [],
-            "processing_status": "Uploaded",  # Initial status per spec
+            "processing_status": "AI Ready" if is_context else "Uploaded",
+            "is_context_file": is_context,
             "summary": None,
         }
     ).execute()
@@ -247,8 +241,7 @@ async def list_company_documents(company_id: str) -> list[dict]:
     result = (
         sb.table("documents")
         .select(
-            "id, company_id, uploaded_by, file_name, file_type, file_url, "
-            "business_line, department, category, tags, "
+            "id, company_id, uploaded_by, file_name, file_type, file_url, tags,"
             "processing_status, summary, created_at"
         )
         .eq("company_id", company_id)

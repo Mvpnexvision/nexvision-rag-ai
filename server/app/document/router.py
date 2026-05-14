@@ -82,9 +82,6 @@ async def upload_document(
     # Metadata fields sent alongside the file as Form fields
     company_id: Annotated[str, Form(description="UUID of the owning company")] = ...,
     uploaded_by: Annotated[str, Form(description="UUID of the uploading user (Supabase Auth UID)")] = ...,
-    business_line: Annotated[str | None, Form(description="Business line, e.g. 'Finance'")] = None,
-    department: Annotated[str | None, Form(description="Department, e.g. 'Accounts Payable'")] = None,
-    category: Annotated[str | None, Form(description="Document category, e.g. 'Quarterly Report'")] = None,
     tags: Annotated[str, Form(description="Comma-separated tags, e.g. 'q3,finance,risk'")] = "",
     current_user: CurrentUser = Depends(get_current_user),
 ):
@@ -99,7 +96,6 @@ async def upload_document(
     - `file` — the document file
     - `company_id` — owning company UUID
     - `uploaded_by` — uploader's Supabase Auth UID
-    - `business_line`, `department`, `category` — optional classification
     - `tags` — comma-separated string, e.g. "q3,finance,vendor"
     """
     filename = file.filename or "document"
@@ -135,9 +131,6 @@ async def upload_document(
         file_name=filename,
         file_type=file_type,
         file_url=storage_path,
-        business_line=business_line,
-        department=department,
-        category=category,
         tags=tag_list,
     )
 
@@ -193,9 +186,19 @@ async def process_document(
     # Verify document exists
     doc = await get_document_by_id(document_id)
     if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Document '{document_id}' not found. Upload it first via POST /documents/upload.",
+        raise HTTPException(status_code=404, detail=f"Document '{document_id}' not found.")
+
+    # Skip RAG pipeline for context files (.md)
+    if doc.get("is_context_file"):
+        await set_status(document_id, "AI Ready")
+        return DocumentProcessResponse(
+            document_id=document_id,
+            file_name=doc["file_name"],
+            processing_status="AI Ready",
+            total_chunks=0,
+            summary=None,
+            error_detail=None,
+            message=f"'{doc['file_name']}' is a context file — skipped RAG pipeline, marked as AI Ready.",
         )
 
     company_id = doc["company_id"]
@@ -343,9 +346,6 @@ async def list_documents(
                 file_name=r["file_name"],
                 file_type=r["file_type"],
                 file_url=r["file_url"],
-                business_line=r.get("business_line"),
-                department=r.get("department"),
-                category=r.get("category"),
                 tags=r.get("tags") or [],
                 processing_status=r.get("processing_status", "Uploaded"),
                 summary=r.get("summary"),

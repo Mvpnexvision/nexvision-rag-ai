@@ -241,7 +241,7 @@ class RecommendationRecord(BaseModel):
 
     In v4, the recommendations table is a thin tracking table.
     All AI-generated content comes from ai_questions via a JOIN.
-    Tracking fields (status, assigned_to, etc.) come from recommendations.
+    Tracking field (status) come from recommendations.
 
     This model merges both into one flat response for the frontend.
     """
@@ -251,9 +251,6 @@ class RecommendationRecord(BaseModel):
     ai_question_id: str
     company_id: str
     status: Literal["New", "In Review", "Accepted", "Rejected", "Completed"]
-    assigned_to: str | None
-    due_date: str | None
-    notes: str | None
     created_at: str
     updated_at: str
 
@@ -278,26 +275,6 @@ class RecommendationsListResponse(BaseModel):
 
 
 class RecommendationStatusUpdate(BaseModel):
-    """
-    Request body for PATCH /recommendations/{id}.
-
-    Only tracking fields can be updated — AI-generated content is immutable.
-    All fields are optional; only provided fields are updated.
-    """
-
-    status: Literal["New", "In Review", "Accepted", "Rejected", "Completed"] | None = Field(
-        default=None,
+    status: Literal["New", "In Review", "Accepted", "Rejected", "Completed"] = Field(
         description="New workflow status for this recommendation.",
-    )
-    assigned_to: str | None = Field(
-        default=None,
-        description="UUID of the user assigned to act on this recommendation.",
-    )
-    due_date: str | None = Field(
-        default=None,
-        description="ISO date string (YYYY-MM-DD) for the action deadline.",
-    )
-    notes: str | None = Field(
-        default=None,
-        description="Operational notes or comments from the reviewer.",
     )
