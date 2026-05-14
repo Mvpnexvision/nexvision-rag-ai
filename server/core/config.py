@@ -60,6 +60,34 @@ class Settings:
     # Supabase — PostgreSQL + pgvector (vector database)
     # ------------------------------------------------------------------
 
+    DEBUG_LOGS: bool = os.getenv("DEBUG_LOGS", "false").lower() == "true"
+    """
+    When True, debug_log() prints to stdout across all modules.
+    Set to false in production. Set to true in .env.local for development.
+    """
+
+    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
+    """
+    Found at: Supabase Dashboard -> Project Settings -> API -> JWT Secret
+    """
+
+    SUPABASE_JWT_PUBLIC_KEY: str = os.getenv("SUPABASE_JWT_PUBLIC_KEY", "")
+    """
+    Public key for ES256 JWT validation (Supabase JWT Public Key).
+    """
+
+    SUPABASE_JWKS_URL: str = os.getenv("SUPABASE_JWKS_URL", "")
+    """
+    JWKS endpoint for Supabase JWT verification.
+    Example: https://<project>.supabase.co/auth/v1/.well-known/jwks.json
+    """
+
+    DEV_BYPASS_USER_ID: str = os.getenv("DEV_BYPASS_USER_ID", "")
+    """
+    DEBUG ONLY. When non-empty, skips JWT entirely and loads this user UUID.
+    Set in .env.local only. Never set in production (Render).
+    """
+
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     """
     Your Supabase project URL.
@@ -132,7 +160,7 @@ class Settings:
     # ------------------------------------------------------------------
 
     ALLOWED_ORIGINS: list[str] = os.getenv(
-        "ALLOWED_ORIGINS", "http://localhost:3000"
+        "CORS_ORIGIN", "http://localhost:3000"
     ).split(",")
     """
     Comma-separated list of allowed frontend origins.

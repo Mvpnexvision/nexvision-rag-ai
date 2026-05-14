@@ -1,5 +1,5 @@
 """
-modules/document_module/router.py
+app/document/router.py
 ==================================
 Document Module — FastAPI Router
 
@@ -24,8 +24,10 @@ All endpoints visible in Swagger UI at: http://localhost:8000/docs
 import uuid
 import io
 from core.config import settings
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Depends
 from typing import Annotated
+
+from core.auth import CurrentUser, get_current_user
 
 from app.document.schemas import (
     DocumentUploadResponse,
@@ -86,6 +88,7 @@ async def upload_document(
     category: Annotated[str | None, Form(description="Document category, e.g. 'Quarterly Report'")] = None,
     tags: Annotated[str, Form(description="Comma-separated tags, e.g. 'q3,finance,risk'")] = "",
     access_level: Annotated[str, Form(description="Access level: company | department | private")] = "company",
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Save a file to Supabase Storage and create a document record.
@@ -175,7 +178,10 @@ async def upload_document(
         "The document must already exist (created via `POST /documents/upload`)."
     ),
 )
-async def process_document(document_id: str):
+async def process_document(
+    document_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     """
     Run Extract → Chunk → Embed → Store for an already-uploaded document.
 
@@ -316,6 +322,7 @@ async def process_document(document_id: str):
 )
 async def list_documents(
     company_id: str = Query(..., description="UUID of the company to list documents for"),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Retrieve all documents uploaded by a company.
@@ -434,3 +441,74 @@ async def delete_document(document_id: str):
         status="deleted",
         message=f"Document '{doc.get('file_name', document_id)}' and all associated data deleted.",
     )
+
+# ---------------------------------------------------------------------------
+# Documents Page Endpoints — for the documents listing/filter page
+# ---------------------------------------------------------------------------
+
+# Import the list and delete services for documents page
+from app.document.services.list_page import get_documents_list as get_list_page_service
+from app.document.services.delete_doc import delete_document as delete_doc_service
+
+@router.get(
+    "/page/list",
+    summary="List documents with pagination and filtering",
+    description="Fetch paginated documents with optional search, file_type, and date filtering."
+)
+async def list_documents_page(
+    company_id: str = Query(..., description="Company UUID"),
+    limit: int = Query(20, description="Results per page (default: 20)", ge=1, le=100),
+    offset: int = Query(0, description="Pagination offset (default: 0)", ge=0),
+    search: str = Query(None, description="Search filename (partial match, case-insensitive)"),
+    file_type: str = Query(None, description="Filter by file type (PDF, DOCX, XLSX, CSV, TXT)"),
+    date_from: str = Query(None, description="Filter from date (YYYY-MM-DD)"),
+    date_to: str = Query(None, description="Filter to date (YYYY-MM-DD)"),
+):
+    """
+    Fetch paginated documents with optional filtering for the documents page.
+    
+    Query parameters:
+    - **company_id**: Required. Company UUID for scoping.
+    - **limit**: Optional. Results per page (1-100, default: 20).
+    - **offset**: Optional. Pagination offset (default: 0).
+    - **search**: Optional. Search by filename.
+    - **file_type**: Optional. Filter by type (PDF|DOCX|XLSX|CSV|TXT).
+    - **date_from**: Optional. Filter from date (YYYY-MM-DD).
+    - **date_to**: Optional. Filter to date (YYYY-MM-DD).
+    """
+    try:
+        result = await get_list_page_service(
+            company_id=company_id,
+            limit=limit,
+            offset=offset,
+            search=search,
+            file_type=file_type,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete(
+    "/page/{document_id}",
+    summary="Delete a single document (documents page)",
+    description="Delete a document and all associated data from the documents page."
+)
+async def delete_document_page(
+    document_id: str,
+    company_id: str = Query(..., description="Company UUID"),
+):
+    """
+    Delete a single document for the documents page.
+    
+    Query parameters:
+    - **document_id**: Required in path. Document UUID.
+    - **company_id**: Required. Company UUID (for security scoping).
+    """
+    try:
+        result = await delete_doc_service(document_id=document_id, company_id=company_id)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

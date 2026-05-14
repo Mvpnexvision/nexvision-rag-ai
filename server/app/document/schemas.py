@@ -1,5 +1,5 @@
 """
-modules/document_module/schemas.py
+app/document/schemas.py
 ====================================
 Request and response schemas for the Document Module.
 
@@ -138,3 +138,26 @@ class DocumentDeleteResponse(BaseModel):
     document_id: str
     status: Literal["deleted", "not_found"]
     message: str
+
+
+# ── Documents Page Endpoints ───────────────────────────────────────────────────
+
+class DocumentPageItem(BaseModel):
+    """Single document in documents page list response."""
+    id: str = Field(description="Document ID (UUID)")
+    file_name: str = Field(description="Original filename")
+    file_type: FileType = Field(description="File type")
+    processing_status: ProcessingStatus = Field(description="Processing status")
+    created_at: str = Field(description="Upload timestamp")
+
+
+class DocumentsPageListResponse(BaseModel):
+    """Response for GET /documents/page/list."""
+    total: int = Field(description="Total matching documents")
+    documents: list[DocumentPageItem] = Field(description="Paginated documents")
+
+
+class DocumentPageDeleteResponse(BaseModel):
+    """Response for DELETE /documents/page/{document_id}."""
+    success: bool = Field(description="Whether deletion succeeded")
+    message: str = Field(description="Status message")

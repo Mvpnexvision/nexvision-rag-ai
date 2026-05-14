@@ -1,46 +1,59 @@
 "use client";
 
-interface EmptyStateProps {
-    onSuggestionClick: (text: string) => void;
-}
+import { useRef } from "react";
 
-export default function EmptyState({ onSuggestionClick }: EmptyStateProps) {
-    const suggestions = [
-        { title: "Summarize document", desc: "Give me a quick overview of the key points." },
-        { title: "Extract action items", desc: "List all tasks and deadlines from the file." },
-        { title: "Identify risks", desc: "Find potential issues mentioned in the text." },
-        { title: "Draft an email", desc: "Write an update based on these requirements." }
-    ];
+export default function EmptyState() {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Handle file selection logic here
+        if (e.target.files) {
+            console.log("Selected files:", e.target.files);
+        }
+    };
 
     return (
         <div className="flex-1 flex flex-col items-center justify-center text-center h-full py-12">
             <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mb-6 border border-gray-200 shadow-sm">
-                <i className="fa-solid fa-sparkles text-2xl text-black"></i>
+                <i className="fa-solid fa-file-arrow-up text-2xl text-black"></i>
             </div>
 
             <h2 className="text-2xl font-semibold text-black mb-3">
-                How can I help you today?
+                Upload your documents
             </h2>
 
             <p className="text-gray-500 max-w-md mx-auto mb-10 text-sm">
-                Upload your documents and ask questions to extract insights, summarize data, or generate reports instantly.
+                Upload your files to extract insights, summarize data, or generate reports instantly.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl w-full text-left">
-                {suggestions.map((item, index) => (
-                    <button
-                        key={index}
-                        onClick={() => onSuggestionClick(`${item.title}: ${item.desc}`)}
-                        className="p-4 border border-gray-200 rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer group text-left"
-                    >
-                        <span className="font-medium text-black block mb-1 group-hover:text-neutral-700 transition-colors">
-                            {item.title}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                            {item.desc}
-                        </span>
-                    </button>
-                ))}
+            {/* Drag & Drop Upload Zone */}
+            <div
+                className="w-full max-w-xl border-2 border-dashed border-gray-300 rounded-xl p-10 flex flex-col items-center gap-4 hover:bg-neutral-50 hover:border-gray-400 transition-colors cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+            >
+                <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center group-hover:bg-white transition-colors shadow-sm">
+                    <i className="fa-solid fa-cloud-arrow-up text-xl text-gray-600"></i>
+                </div>
+
+                <div>
+                    <p className="font-medium text-black mb-1">
+                        Click to upload <span className="font-normal text-gray-500">or drag and drop</span>
+                    </p>
+                    <p className="text-xs text-gray-500">
+                        Supports PDF, DOCX, XLSX, TXT, and CSV (max. 50MB)
+                    </p>
+                </div>
+
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    aria-label="Upload documents"
+                    title="Upload documents"
+                    accept=".pdf,.docx,.xlsx,.txt,.csv"
+                    multiple
+                    onChange={handleFileChange}
+                />
             </div>
         </div>
     );

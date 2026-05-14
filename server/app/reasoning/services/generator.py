@@ -1,5 +1,5 @@
 """
-modules/reasoning/services/generator.py
+app/reasoning/services/generator.py
 =========================================
 STAGE 6 of the pipeline: Generate
 
@@ -16,6 +16,7 @@ Changes from v1:
 
 import json
 import re
+from core.config import settings
 from fastapi import HTTPException
 from core.gemini_client import get_chat_model
 from app.rag.schemas import RetrievedChunk
@@ -212,7 +213,10 @@ async def generate_insight(
 
     # Call Gemini
     model = get_chat_model()
-    response = model.generate_content(full_prompt)
+    response = model.generate_content(
+        model=settings.GEMINI_CHAT_MODEL,
+        contents=full_prompt,
+    )
 
     if not response.text:
         raise HTTPException(

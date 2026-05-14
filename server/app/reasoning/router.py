@@ -1,5 +1,5 @@
 """
-modules/reasoning/router.py
+app/reasoning/router.py
 ============================
 RAG & AI Module — FastAPI Router
 
@@ -19,7 +19,7 @@ are part of each route path directly, matching the spec's API surface.
 
 import uuid
 import json
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 
 from app.reasoning.schemas import (
     AIChatRequest,
@@ -32,6 +32,7 @@ from app.reasoning.schemas import (
 from app.rag.services.retriever import retrieve_relevant_chunks
 from app.reasoning.services.generator import generate_insight
 from core.supabase_client import get_supabase_client
+from core.auth import CurrentUser, get_current_user
 
 router = APIRouter()
 
@@ -97,7 +98,7 @@ async def _save_ai_question(
         "The core NexVision RAG endpoint. Submits a business question and receives "
         "a structured AI insight grounded in the company's uploaded documents.\n\n"
         "**Full pipeline (per call):**\n"
-        "1. Embed question → 768-float vector (Gemini text-embedding-004)\n"
+        "1. Embed question → 1536-float vector (Gemini gemini-embedding-001)\n"
         "2. Cosine similarity search → top-K chunks (Supabase pgvector)\n"
         "3. Build prompt: system rules + chunks + question\n"
         "4. Gemini generates structured JSON insight\n"
@@ -107,7 +108,10 @@ async def _save_ai_question(
         "Requires at least one document with status `AI Ready` for the given company."
     ),
 )
-async def ai_chat(request: AIChatRequest):
+async def ai_chat(
+    request: AIChatRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     """
     Submit a business question and receive a structured NexVision insight.
 
@@ -190,6 +194,7 @@ async def get_ai_questions(
     company_id: str = Query(..., description="UUID of the company to fetch question history for"),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum number of records to return"),
     user_id: str | None = Query(None, description="Optional: filter to questions from a specific user"),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     List all AI questions and answers for a company.
@@ -266,7 +271,10 @@ async def get_ai_questions(
         "'HR attrition patterns', 'inventory turnover trends'"
     ),
 )
-async def generate_insight_endpoint(request: InsightGenerateRequest):
+async def generate_insight_endpoint(
+    request: InsightGenerateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     """
     Generate a comprehensive, proactive business insight on a given topic.
 

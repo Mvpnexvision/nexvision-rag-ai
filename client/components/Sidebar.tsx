@@ -3,9 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactElement } from "react";
 
 import ragLogoName from "@/app/resources/rag-logoName.png";
+import { useAuth } from "@/contexts/authContext";
+import { debugLog } from "@/utils/logger";
 
 interface NavItem {
     name: string;
@@ -105,16 +107,12 @@ export default function Sidebar({
                     bg-[#101B1D]
                     border-r border-[#122F35]
                     transition-all duration-300 ease-in-out
-                    ${isCollapsed ? "w-[72px]" : "w-[260px]"}
-                    ${isMobileOpen
-                        ? "translate-x-0"
-                        : "-translate-x-full md:translate-x-0"
-                    }
+                    ${isCollapsed ? "w-18" : "w-65"}
+                    ${isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
                 `}
-            >
-                {/* Header */}
-                <div
-                    className={`
+      >
+        <div
+          className={`
                         h-16 border-b border-[#122F35]
                         flex items-center
                         ${isCollapsed ? "justify-center" : "justify-between px-5"}
@@ -302,47 +300,34 @@ export default function Sidebar({
                                 px-3 py-2.5
                                 rounded-lg
                                 transition-colors
-                                ${showProfileMenu
-                                    ? "bg-[#122F35]"
-                                    : "hover:bg-[#122F35]/60"
-                                }
+                                ${showProfileMenu ? "bg-[#122F35]" : "hover:bg-[#122F35]/60"}
                                 ${isCollapsed ? "justify-center" : ""}
                             `}
-                        >
-                            {/* Avatar */}
-                            <div className="
-                                w-8 h-8 rounded-full flex-shrink-0
-                                bg-gradient-to-br from-[#0DBBC4]/30 to-[#0DBBC4]/10
-                                border border-[#0DBBC4]/30
-                                flex items-center justify-center
-                            ">
-                                <span className="text-xs font-semibold text-[#0DBBC4]">FN</span>
-                            </div>
+            >
+              <div className="w-8 h-8 rounded-full shrink-0 bg-linear-to-br from-[#0DBBC4]/30 to-[#0DBBC4]/10 border border-[#0DBBC4]/30 flex items-center justify-center">
+                <span className="text-xs font-semibold text-[#0DBBC4]">
+                  {avatarInitials}
+                </span>
+              </div>
 
-                            {/* Name + role */}
-                            {!isCollapsed && (
-                                <>
-                                    <div className="flex-1 text-left min-w-0">
-                                        <p className="text-sm font-medium text-white truncate leading-tight">
-                                            First Name
-                                        </p>
-                                        <p className="text-xs text-gray-500 truncate leading-tight">
-                                            Staff
-                                        </p>
-                                    </div>
+              {!isCollapsed && (
+                <>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="text-sm font-medium text-white truncate leading-tight">
+                      {displayName}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate leading-tight">
+                      {displayRole}
+                    </p>
+                  </div>
 
-                                    <i className={`
-                                        fa-solid fa-ellipsis
-                                        text-xs text-gray-500
-                                        group-hover:text-gray-300
-                                        transition-colors
-                                    `} />
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </nav>
-            </aside>
-        </>
-    );
+                  <i className="fa-solid fa-ellipsis text-xs text-gray-500 group-hover:text-gray-300 transition-colors" />
+                </>
+              )}
+            </button>
+          </div>
+        </nav>
+      </aside>
+    </>
+  );
 }

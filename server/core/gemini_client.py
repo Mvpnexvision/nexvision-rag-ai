@@ -57,7 +57,7 @@ def get_embedding_model():
     as a parameter, so we return the string rather than a model object.
 
     Returns:
-        str: model identifier, e.g. "models/text-embedding-004"
+        str: model identifier, e.g. "models/gemini-embedding-001"
     """
     return settings.GEMINI_EMBEDDING_MODEL
 

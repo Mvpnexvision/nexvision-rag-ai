@@ -1,5 +1,5 @@
 """
-modules/document_module/services/vector_store.py
+app/document/services/vector_store.py
 =================================================
 STAGE 4 of the document pipeline: Store
 STAGE 5 of the RAG pipeline: Retrieve
@@ -17,7 +17,7 @@ Schema alignment (v2 — matches product spec):
         page_number   int (nullable)
         embedding_id  text          ← the vector is stored inline; this is a label
         metadata_json jsonb         ← source_file, sheet_name, row_range, etc.
-        embedding     vector(768)   ← the actual pgvector column
+        embedding     vector(1536)   ← the actual pgvector column
         created_at    timestamptz
 
 The `metadata_json` field replaces the separate `source_file` column from v1.
@@ -34,7 +34,7 @@ async def store_chunks(embedded_chunks: list[dict]) -> int:
     """
     Insert embedded chunks into the `document_chunks` table.
 
-    Each row contains the chunk text, its 768-float embedding vector,
+    Each row contains the chunk text, its 1536-float embedding vector,
     and a metadata_json blob with source details (filename, page, etc.).
 
     Uses upsert on `id` so re-processing a document safely overwrites
@@ -47,7 +47,7 @@ async def store_chunks(embedded_chunks: list[dict]) -> int:
                 document_id   str   — parent document UUID
                 company_id    str   — owning company UUID/identifier
                 text          str   — chunk text content
-                embedding     list[float] — 768-dimensional vector
+                embedding     list[float] — 1536-dimensional vector
                 chunk_index   int   — position in document
                 page_number   int|None
                 source_file   str   — original filename
@@ -171,7 +171,7 @@ async def vector_search(
     filtered by company. Returns the top-K closest chunks.
 
     Args:
-        query_embedding: 768-float vector of the user's question.
+        query_embedding: 1536-float vector of the user's question.
         company_id:      Only return chunks from this company (access control).
         top_k:           Number of chunks to return.
 

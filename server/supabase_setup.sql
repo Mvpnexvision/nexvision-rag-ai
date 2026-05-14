@@ -36,9 +36,13 @@ create extension if not exists "uuid-ossp";
 create table if not exists companies (
     id            uuid primary key default gen_random_uuid(),
     company_name  text not null,
-    business_line text,
+    business_line text not null default 'custom business',
     industry      text,
-    created_at    timestamptz default now()
+    created_at    timestamptz default now(),
+
+    constraint companies_business_line_check check (
+        business_line in ('hr/admin', 'logistics', 'retail', 'clinic/aesthetic', 'construction/equipment', 'custom business')
+    )
 );
 
 comment on table companies is
@@ -50,12 +54,19 @@ comment on table companies is
 -- ------------------------------------------------------------
 create table if not exists users (
     id            uuid primary key references auth.users(id) on delete cascade,
-    company_id    uuid not null references companies(id) on delete cascade,
+    company_id    uuid references companies(id) on delete cascade,
     name          text not null,
     email         text not null unique,
-    role          text not null default 'viewer',   -- 'admin' | 'analyst' | 'viewer'
-    status        text not null default 'active',   -- 'active' | 'inactive' | 'suspended'
-    created_at    timestamptz default now()
+    role          text not null default 'admin',
+    status        text not null default 'active',
+    created_at    timestamptz default now(),
+
+    constraint users_role_check check (
+        role in ('superadmin', 'admin')
+    ),
+    constraint users_status_check check (
+        status in ('active', 'inactive')
+    )
 );
 
 comment on table users is
@@ -63,6 +74,51 @@ comment on table users is
 
 create index if not exists users_company_idx on users (company_id);
 create index if not exists users_email_idx   on users (email);
+
+
+-- ------------------------------------------------------------
+-- Function: handle_new_auth_user
+-- Auto-create users row on signup
+-- ------------------------------------------------------------
+create or replace function public.handle_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    insert into public.users (
+        id,
+        company_id,
+        name,
+        email,
+        role,
+        status
+    )
+    values (
+        new.id,
+        nullif(new.raw_user_meta_data->>'company_id', '')::uuid,
+        coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+        new.email,
+        coalesce(new.raw_user_meta_data->>'role', 'admin'),
+        'active'
+    );
+
+    return new;
+end;
+$$;
+
+
+-- ------------------------------------------------------------
+-- Trigger: on_auth_user_created
+-- Binds the function to auth.users INSERT events
+-- ------------------------------------------------------------
+drop trigger if exists on_auth_user_created on auth.users;
+
+create trigger on_auth_user_created
+    after insert on auth.users
+    for each row
+    execute function public.handle_new_auth_user();
 
 
 -- ============================================================
@@ -146,7 +202,7 @@ create or replace function match_documents(
     query_embedding  vector(1536),
     match_count      int,
     filter_company   text,
-    filter_documents  uuid[] default null   -- optional: scope to specific document IDs
+    filter_documents  uuid[] default null
 )
 returns table (
     id             uuid,
@@ -172,8 +228,8 @@ as $$
     from document_chunks
     where company_id = filter_company::uuid
       and (
-          filter_documents is null              -- no filter = search all company docs
-          or document_id = ANY(filter_documents) -- filter = search only chat's docs
+          filter_documents is null
+          or document_id = any(filter_documents)
       )
     order by embedding <=> query_embedding
     limit match_count;
@@ -192,19 +248,14 @@ comment on function match_documents is
 
 -- ------------------------------------------------------------
 -- Table: ai_chats
--- One row per conversation session (like a Claude or ChatGPT thread).
--- A chat belongs to one user and one company.
--- Documents are linked via ai_chat_documents (many-to-many).
--- All messages (ai_questions) in a chat share the same document context.
 -- ------------------------------------------------------------
 create table if not exists ai_chats (
     id          uuid primary key default gen_random_uuid(),
     company_id  uuid not null references companies(id) on delete cascade,
     user_id     uuid not null references users(id) on delete cascade,
     title       text not null default 'New Chat',
-                                            -- auto-generated from first message or user-defined
     created_at  timestamptz default now(),
-    updated_at  timestamptz default now()   -- bumped on every new message
+    updated_at  timestamptz default now()
 );
 
 comment on table ai_chats is
@@ -218,10 +269,6 @@ create index if not exists ai_chats_updated_idx on ai_chats (updated_at desc);
 
 -- ------------------------------------------------------------
 -- Table: ai_chat_documents
--- Junction table — links documents to a chat as context sources.
--- A chat can have many documents; a document can appear in many chats.
--- The RAG retriever filters vector search to only these document IDs
--- when answering questions in that chat.
 -- ------------------------------------------------------------
 create table if not exists ai_chat_documents (
     id          uuid primary key default gen_random_uuid(),
@@ -229,7 +276,6 @@ create table if not exists ai_chat_documents (
     document_id uuid not null references documents(id) on delete cascade,
     added_at    timestamptz default now(),
 
-    -- prevent the same document being added to the same chat twice
     constraint ai_chat_documents_unique unique (chat_id, document_id)
 );
 
@@ -243,20 +289,17 @@ create index if not exists ai_chat_documents_document_idx on ai_chat_documents (
 
 -- ------------------------------------------------------------
 -- Table: ai_questions
--- One row per message exchange (user question + AI answer).
--- Now linked to a chat via chat_id so messages belong to a thread.
 -- ------------------------------------------------------------
 create table if not exists ai_questions (
     id              uuid primary key default gen_random_uuid(),
     chat_id         uuid references ai_chats(id) on delete cascade,
-                                            -- nullable for backwards compat with direct /ai/chat calls
     company_id      uuid not null references companies(id) on delete cascade,
     user_id         uuid references users(id) on delete set null,
     question        text not null,
     answer          text,
     reasoning       text,
     recommendation  text,
-    risk_level      text,                   -- 'Low' | 'Medium' | 'High' | 'Critical'
+    risk_level      text,
     sources_json    jsonb,
     created_at      timestamptz default now()
 );
@@ -286,7 +329,7 @@ create table if not exists recommendations (
     risk_level       text not null,
     business_impact  text,
     next_action      text,
-    status           text not null default 'pending',
+    status           text not null default 'new',
     created_by_ai    boolean default true,
     created_at       timestamptz default now(),
 
@@ -294,7 +337,7 @@ create table if not exists recommendations (
         risk_level in ('Low', 'Medium', 'High', 'Critical')
     ),
     constraint recommendations_status_check check (
-        status in ('pending', 'in_progress', 'resolved', 'dismissed')
+        status in ('new', 'in_review', 'accepted', 'rejected', 'completed')
     )
 );
 
@@ -318,21 +361,3 @@ create table if not exists reports (
 
 create index if not exists reports_company_idx on reports (company_id);
 create index if not exists reports_type_idx    on reports (report_type);
-
-
--- ------------------------------------------------------------
--- Table: structured_records
--- ------------------------------------------------------------
-create table if not exists structured_records (
-    id             uuid primary key default gen_random_uuid(),
-    company_id     uuid not null references companies(id) on delete cascade,
-    business_line  text,
-    record_type    text not null,
-    record_json    jsonb not null,
-    created_at     timestamptz default now()
-);
-
-create index if not exists structured_records_company_idx on structured_records (company_id);
-create index if not exists structured_records_type_idx    on structured_records (record_type);
-create index if not exists structured_records_json_idx
-    on structured_records using gin (record_json);

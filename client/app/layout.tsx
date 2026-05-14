@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-
+import { AuthProvider } from "@/contexts/authContext";
+import { ToastProvider } from "@/components/Toast";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
@@ -20,8 +22,12 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         />
       </head>
-      <body className={`${inter.variable} bg-neutral-50 text-black antialiased`}>
-        {children}
+      <body
+        className={`${inter.variable} bg-neutral-50 text-black antialiased`}
+      >
+        <ToastProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );
