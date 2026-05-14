@@ -28,7 +28,8 @@ export default function Login() {
   useEffect(() => {
     if (!authLoading && session) {
       const roleFromProfile = profile?.role;
-      const defaultTarget = roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
+      const defaultTarget =
+        roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
       router.replace(redirectTo ?? defaultTarget);
     }
   }, [authLoading, session, redirectTo, router, profile]);
@@ -85,14 +86,18 @@ export default function Login() {
           debugLog("AUTH", `/auth/me -> status=${res.status}`);
           if (res.ok) {
             const profileBody = await res.json();
-            debugLog("AUTH", `/auth/me -> profile=${JSON.stringify(profileBody)}`);
+            debugLog(
+              "AUTH",
+              `/auth/me -> profile=${JSON.stringify(profileBody)}`,
+            );
             showToast({
               title: "Signed in",
               message: "Signed in successfully",
               type: "success",
             });
             const backendRole = profileBody?.role;
-            const defaultTarget = backendRole === "superadmin" ? "/dashboard_admin" : "/dashboard";
+            const defaultTarget =
+              backendRole === "superadmin" ? "/dashboard_admin" : "/dashboard";
             const target = redirectTo ?? defaultTarget;
             router.replace(target);
             return; // stop further navigation below
@@ -119,7 +124,8 @@ export default function Login() {
       debugLog("AUTH", "Login success");
       // fallback navigation if /auth/me didn't redirect earlier
       const roleFromProfile = profile?.role;
-      const defaultTarget = roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
+      const defaultTarget =
+        roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
       const target = redirectTo ?? defaultTarget;
       router.replace(target);
     } catch (err) {
