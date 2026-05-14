@@ -46,6 +46,14 @@ class LinkDocumentsRequest(BaseModel):
     )
 
 
+class LinkDocumentsResponse(BaseModel):
+    chat_id: str
+    linked_document_ids: list[str] = Field(
+        ...,
+        description="List of document UUIDs now linked to the chat after this operation.",
+    )
+
+
 class ChatMetadataResponse(BaseModel):
     """
     Response from GET /chat/{chat_id}.

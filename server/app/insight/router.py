@@ -36,6 +36,7 @@ from app.insight.schemas import (
     ChatListItem,
     ChatListResponse,
     LinkDocumentsRequest,
+    LinkDocumentsResponse,
     NewChatRequest,
     NewChatResponse,
     ChatMetadataResponse,
@@ -200,10 +201,20 @@ async def create_chat(
 # ── POST /chat/{chat_id}/documents/link ─────────────────────────────────────────────
 
 
-@router.post("/chat/{chat_id}/documents/link")
+@router.post(
+    "/chat/{chat_id}/documents/link", 
+    response_model=LinkDocumentsResponse,
+    summary="Link existing documents to a chat session",
+    description=(
+        "Link existing documents to a chat session by their UUIDs.\n\n"
+        "This endpoint updates the ai_chats.document_ids list and also inserts "
+        "into the ai_chat_documents junction table for accurate RAG scoping.\n\n"
+        "If a document is already linked, it will be skipped without error."
+    ),
+)
 async def link_documents_to_chat(
     chat_id: str,
-    body: LinkDocumentsRequest,  # { document_ids: list[str] }
+    body: LinkDocumentsRequest,
     current_user: CurrentUser = Depends(get_current_user),
 ):
     sb = get_supabase_client()
@@ -219,12 +230,20 @@ async def link_documents_to_chat(
     all_ids = existing_ids + body.document_ids
 
     # Update ai_chats
-    sb.table("ai_chats").update({
-        "document_ids": json.dumps(all_ids),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }).eq("id", chat_id).execute()
+    try:
+        sb.table("ai_chats").update({
+            "document_ids": json.dumps(all_ids),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", chat_id).execute()
+    except Exception as exc:
+        debug_log("REASONING", f"Failed to update ai_chats document_ids for chat {chat_id}: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to link documents to chat: {exc}",
+        )
 
-    # Insert into joint table
+    # Insert into joint table — skip duplicates, log other failures
+    failed_ids: list[str] = []
     for doc_id in body.document_ids:
         try:
             sb.table("ai_chat_documents").insert({
@@ -232,11 +251,29 @@ async def link_documents_to_chat(
                 "chat_id": chat_id,
                 "document_id": doc_id,
             }).execute()
-        except Exception:
-            pass  # Ignore duplicates
+        except Exception as exc:
+            error_str = str(exc)
+            if "duplicate" in error_str.lower() or "unique" in error_str.lower():
+                # Already linked — not an error, skip silently
+                debug_log("REASONING", f"Document {doc_id} already linked to chat {chat_id}, skipping.")
+            else:
+                # Genuine failure — log and collect for response
+                debug_log("REASONING", f"Failed to insert ai_chat_documents row for doc {doc_id}: {exc}")
+                failed_ids.append(doc_id)
 
-    return {"chat_id": chat_id, "linked_document_ids": body.document_ids}
+    response = LinkDocumentsResponse(
+        chat_id=chat_id,
+        linked_document_ids=body.document_ids
+    )
 
+    if failed_ids:
+        response["warnings"] = (
+            f"{len(failed_ids)} document(s) failed to insert into ai_chat_documents "
+            f"but were added to ai_chats.document_ids: {failed_ids}. "
+            "Vector search will still work; the junction table may be out of sync."
+        )
+
+    return response
 
 # ── GET /chat/{chat_id} ────────────────────────────────────────────────────────
 
@@ -404,11 +441,34 @@ async def ai_chat(
     7. Return full AIChatResponse
     """
     # Run the pipeline
-    result = await run_chat_pipeline(
-        question=request.question,
-        chat_id=request.chat_id,
-        company_id=request.company_id,
-    )
+    try:
+        result = await run_chat_pipeline(
+            question=request.question,
+            chat_id=request.chat_id,
+            company_id=request.company_id,
+        )
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        error_str = str(exc)
+
+        # Classify the error for the frontend
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            user_message = (
+                "AI quota exceeded. The Gemini free tier limit has been reached. "
+                "Please wait and try again, or upgrade your Gemini API plan."
+            )
+            status_code = 429
+        elif "quota" in error_str.lower():
+            user_message = "AI service quota exceeded. Please try again later."
+            status_code = 429
+        else:
+            user_message = f"AI pipeline failed: {error_str}"
+            status_code = 500
+
+        raise HTTPException(status_code=status_code, detail=user_message)
 
     answer = result["answer"]
     has_insight = result["has_insight"]
