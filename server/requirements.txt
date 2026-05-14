@@ -12,6 +12,7 @@ google-genai
 # Database & Storage
 supabase>=2.10.0
 python-dotenv
+python-jose[cryptography]
 
 # Document Processing — file upload parsing
 python-multipart           # Required by FastAPI for UploadFile / multipart forms

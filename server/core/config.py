@@ -66,6 +66,28 @@ class Settings:
     Set to false in production. Set to true in .env.local for development.
     """
 
+    SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
+    """
+    Found at: Supabase Dashboard -> Project Settings -> API -> JWT Secret
+    """
+
+    SUPABASE_JWT_PUBLIC_KEY: str = os.getenv("SUPABASE_JWT_PUBLIC_KEY", "")
+    """
+    Public key for ES256 JWT validation (Supabase JWT Public Key).
+    """
+
+    SUPABASE_JWKS_URL: str = os.getenv("SUPABASE_JWKS_URL", "")
+    """
+    JWKS endpoint for Supabase JWT verification.
+    Example: https://<project>.supabase.co/auth/v1/.well-known/jwks.json
+    """
+
+    DEV_BYPASS_USER_ID: str = os.getenv("DEV_BYPASS_USER_ID", "")
+    """
+    DEBUG ONLY. When non-empty, skips JWT entirely and loads this user UUID.
+    Set in .env.local only. Never set in production (Render).
+    """
+
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     """
     Your Supabase project URL.

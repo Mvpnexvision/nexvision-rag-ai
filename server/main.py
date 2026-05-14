@@ -32,6 +32,7 @@ from core.config import settings
 from app.document.router import router as document_router
 from app.reasoning.router import router as reasoning_router
 from app.dashboard.router import router as dashboard_router
+from app.auth.router import router as auth_router
 from app.reports.router import router as reports_router
 
 # ---------------------------------------------------------------------------
@@ -80,6 +81,9 @@ app.include_router(reasoning_router, tags=["Reasoning Module"])
 
 # Dashboard Module: /dashboard/stats
 app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard Module"])
+
+# Auth Module: /auth/me
+app.include_router(auth_router, prefix="/auth", tags=["Auth Module"])
 
 # Reports Module: /reports/generate, GET /reports
 app.include_router(reports_router, tags=["Reports Module"])

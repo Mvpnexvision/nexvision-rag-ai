@@ -54,7 +54,7 @@ comment on table companies is
 -- ------------------------------------------------------------
 create table if not exists users (
     id            uuid primary key references auth.users(id) on delete cascade,
-    company_id    uuid not null references companies(id) on delete cascade,
+    company_id    uuid references companies(id) on delete cascade,
     name          text not null,
     email         text not null unique,
     role          text not null default 'admin',
@@ -74,6 +74,51 @@ comment on table users is
 
 create index if not exists users_company_idx on users (company_id);
 create index if not exists users_email_idx   on users (email);
+
+
+-- ------------------------------------------------------------
+-- Function: handle_new_auth_user
+-- Auto-create users row on signup
+-- ------------------------------------------------------------
+create or replace function public.handle_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    insert into public.users (
+        id,
+        company_id,
+        name,
+        email,
+        role,
+        status
+    )
+    values (
+        new.id,
+        nullif(new.raw_user_meta_data->>'company_id', '')::uuid,
+        coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+        new.email,
+        coalesce(new.raw_user_meta_data->>'role', 'admin'),
+        'active'
+    );
+
+    return new;
+end;
+$$;
+
+
+-- ------------------------------------------------------------
+-- Trigger: on_auth_user_created
+-- Binds the function to auth.users INSERT events
+-- ------------------------------------------------------------
+drop trigger if exists on_auth_user_created on auth.users;
+
+create trigger on_auth_user_created
+    after insert on auth.users
+    for each row
+    execute function public.handle_new_auth_user();
 
 
 -- ============================================================
