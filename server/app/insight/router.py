@@ -134,9 +134,6 @@ async def _create_recommendation(
         "ai_question_id": ai_question_id,
         "company_id": company_id,
         "status": "New",
-        "assigned_to": None,
-        "due_date": None,
-        "notes": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -473,8 +470,7 @@ async def list_recommendations(
     query = (
         sb.table("recommendations")
         .select(
-            "id, ai_question_id, company_id, status, assigned_to, due_date, "
-            "notes, created_at, updated_at, "
+            "id, ai_question_id, company_id, status, created_at, updated_at, "
             "ai_questions(question, answer, evidence_found, reasoning, recommendation, "
             "risk_level, business_impact, next_action, sources_json)"
         )
@@ -507,9 +503,6 @@ async def list_recommendations(
             ai_question_id=r.get("ai_question_id", ""),
             company_id=r.get("company_id", ""),
             status=r.get("status", "New"),
-            assigned_to=r.get("assigned_to"),
-            due_date=str(r.get("due_date")) if r.get("due_date") else None,
-            notes=r.get("notes"),
             created_at=str(r.get("created_at", "")),
             updated_at=str(r.get("updated_at", "")),
             # AI content from JOIN
@@ -536,10 +529,9 @@ async def list_recommendations(
 
 @router.patch(
     "/recommendations/{recommendation_id}",
-    summary="Update recommendation tracking fields",
+    summary="Update recommendation status",
     description=(
-        "Update the tracking fields of a recommendation: "
-        "status, assigned_to, due_date, and/or notes.\n\n"
+        "Update the status of a recommendation.\n\n"
         "AI-generated content (question, reasoning, recommendation text, risk_level, etc.) "
         "is immutable and cannot be updated via this endpoint."
     ),
@@ -549,25 +541,14 @@ async def update_recommendation(
     update: RecommendationStatusUpdate,
     current_user: CurrentUser = Depends(get_current_user),
 ):
-    """Update only the tracking fields of a recommendation."""
     sb = get_supabase_client()
-
-    # Build update payload from provided (non-None) fields only
-    payload: dict = {
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
-    if update.status is not None:
-        payload["status"] = update.status
-    if update.assigned_to is not None:
-        payload["assigned_to"] = update.assigned_to
-    if update.due_date is not None:
-        payload["due_date"] = update.due_date
-    if update.notes is not None:
-        payload["notes"] = update.notes
 
     result = (
         sb.table("recommendations")
-        .update(payload)
+        .update({
+            "status": update.status,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        })
         .eq("id", recommendation_id)
         .execute()
     )

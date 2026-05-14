@@ -107,6 +107,27 @@ async def _load_chat(chat_id: str) -> dict:
         raise ValueError(f"Chat '{chat_id}' not found.")
     return result.data[0]
 
+async def _get_company_business_line(company_id: str) -> str | None:
+    """
+    Fetch the business_line field from the companies table.
+
+    Args:
+        company_id: UUID of the company.
+
+    Returns:
+        str: The business line (e.g. "Construction") or None if not set.
+    """
+    sb = get_supabase_client()
+    result = (
+        sb.table("companies")
+        .select("business_line")
+        .eq("id", company_id)
+        .limit(1)
+        .execute()
+    )
+    if not result.data:
+        return None
+    return result.data[0].get("business_line")
 
 async def _load_md_context(document_ids: list[str]) -> str:
     """
@@ -191,9 +212,10 @@ async def run_chat_pipeline(
         ValueError: If the chat is not found.
         HTTPException: Propagated from vector search or Gemini call failures.
     """
-    # Step 1: Load chat → get document_ids for scoping
+    # Step 1: Load chat → get document_ids and business_line for scoping
     chat = await _load_chat(chat_id)
     raw_doc_ids = chat.get("document_ids") or []
+    business_line = await _get_company_business_line(company_id)
 
     # document_ids may be stored as a JSON string in the DB (jsonb column)
     if isinstance(raw_doc_ids, str):
@@ -222,10 +244,11 @@ async def run_chat_pipeline(
     )
 
     # Step 5: Build prompt and call Gemini via generator
-    output: AIOutputJSON = await build_and_call_gemini(
+    output = await build_and_call_gemini(
         question=question,
         chunks=raw_chunks,
         md_context=md_context,
+        business_line=business_line,
     )
 
     # Step 6: Determine has_insight from the AI output

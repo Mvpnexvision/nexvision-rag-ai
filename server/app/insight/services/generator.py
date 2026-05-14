@@ -12,6 +12,7 @@ This file is called exclusively by pipeline.py.
 The separation keeps prompt logic isolated from orchestration logic.
 """
 
+import asyncio
 import json
 import re
 from fastapi import HTTPException
@@ -59,7 +60,8 @@ The JSON must exactly match this schema:
   "sources": [
     "Filename.pdf, page 4",
     "Spreadsheet.xlsx, Sheet: Revenue, page N/A"
-  ]
+  ],
+  "suggested_due_date": "YYYY-MM-DD or null — suggest a due date to make a decision based on urgency implied by the question and context"
 }
 """.strip()
 
@@ -160,7 +162,9 @@ async def build_and_call_gemini(
     question: str,
     chunks: list[dict],
     md_context: str = "",
+    business_line: str | None = None,
 ) -> AIOutputJSON:
+
     """
     Build the full prompt, call Gemini, and return a validated AIOutputJSON.
 
@@ -184,11 +188,12 @@ async def build_and_call_gemini(
     """
     # Build the [BUSINESS CONTEXT] section
     business_context_block = ""
-    if md_context and md_context.strip():
-        business_context_block = (
-            "[BUSINESS CONTEXT — read this first, it describes the company's operations]\n"
-            f"{md_context}\n"
-        )
+    if business_line or (md_context and md_context.strip()):
+        business_context_block = "[BUSINESS CONTEXT — read this first]\n"
+        if business_line:
+            business_context_block += f"Industry/Business Line: {business_line}\n"
+        if md_context and md_context.strip():
+            business_context_block += f"{md_context}\n"
 
     # Build the [DOCUMENT CONTEXT] section from RAG chunks
     chunk_context_block = _build_chunk_context(chunks)
@@ -213,13 +218,21 @@ async def build_and_call_gemini(
         f"{question}\n\n"
         "Respond with ONLY valid JSON matching the schema above. No markdown fences."
     )
+    print(f"[GEMINI] Prompt length: {len(full_prompt)} chars")
 
     # Call Gemini
     model = get_chat_model()
-    response = model.generate_content(
-        model=settings.GEMINI_CHAT_MODEL,
-        contents=full_prompt,
+    print("[GEMINI] Sending prompt...")
+    response = await asyncio.to_thread(
+        lambda: model.generate_content(
+            model=settings.GEMINI_CHAT_MODEL,
+            contents=full_prompt,
+            config={
+                "thinking_config": {"thinking_budget": 0}
+            }
+        )
     )
+    print(f"[GEMINI] Response received: {response.text[:100] if response.text else 'EMPTY'}")
 
     if not response.text:
         raise HTTPException(
