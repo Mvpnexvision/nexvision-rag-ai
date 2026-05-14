@@ -18,7 +18,7 @@ export default function Login() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get("redirect") ?? undefined;
   const { showToast } = useToast();
-  const { session, loading: authLoading } = useAuth();
+  const { session, loading: authLoading, profile } = useAuth();
   const [role, setRole] = useState<"owner" | "admin">("owner");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,9 +27,12 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && session) {
-      router.replace(redirectTo ?? "/dashboard");
+      const roleFromProfile = profile?.role;
+      const defaultTarget =
+        roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
+      router.replace(redirectTo ?? defaultTarget);
     }
-  }, [authLoading, session, redirectTo, router]);
+  }, [authLoading, session, redirectTo, router, profile]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,14 +83,24 @@ export default function Login() {
           const res = await fetch(`${API_BASE_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
-          const body = await res.text();
-          debugLog("AUTH", `/auth/me -> status=${res.status} body=${body}`);
+          debugLog("AUTH", `/auth/me -> status=${res.status}`);
           if (res.ok) {
+            const profileBody = await res.json();
+            debugLog(
+              "AUTH",
+              `/auth/me -> profile=${JSON.stringify(profileBody)}`,
+            );
             showToast({
               title: "Signed in",
               message: "Signed in successfully",
               type: "success",
             });
+            const backendRole = profileBody?.role;
+            const defaultTarget =
+              backendRole === "superadmin" ? "/dashboard_admin" : "/dashboard";
+            const target = redirectTo ?? defaultTarget;
+            router.replace(target);
+            return; // stop further navigation below
           } else {
             showToast({
               title: "Signed in",
@@ -109,8 +122,11 @@ export default function Login() {
       }
 
       debugLog("AUTH", "Login success");
-      // navigate to redirect param if present, using replace to avoid history loop
-      const target = redirectTo ?? "/dashboard";
+      // fallback navigation if /auth/me didn't redirect earlier
+      const roleFromProfile = profile?.role;
+      const defaultTarget =
+        roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
+      const target = redirectTo ?? defaultTarget;
       router.replace(target);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed.";

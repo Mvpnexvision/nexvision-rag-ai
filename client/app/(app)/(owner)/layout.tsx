@@ -7,14 +7,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-neutral-50 w-full">
-      <Sidebar
-        isCollapsed={isCollapsed}
-        toggleSidebar={() => setIsCollapsed(!isCollapsed)}
-        isMobileOpen={isMobileOpen}
-        toggleMobile={() => setIsMobileOpen(!isMobileOpen)}
-      />
+    return (
+        <div className="flex h-screen overflow-hidden bg-neutral-50 w-full">
+            <Sidebar
+                role="owner"
+                isCollapsed={isCollapsed}
+                toggleSidebar={() => setIsCollapsed(!isCollapsed)}
+                isMobileOpen={isMobileOpen}
+                toggleMobile={() => setIsMobileOpen(!isMobileOpen)}
+            />
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header */}
