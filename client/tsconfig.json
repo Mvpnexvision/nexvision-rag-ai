@@ -27,8 +27,11 @@
     "next-env.d.ts",
     "app/**/*",
     "components/**/*",
+    "contexts/**/*",
+    "hooks/**/*",
     "lib/**/*",
     "next.config.ts",
+    "middleware.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
