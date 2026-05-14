@@ -24,8 +24,10 @@ All endpoints visible in Swagger UI at: http://localhost:8000/docs
 import uuid
 import io
 from core.config import settings
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Depends
 from typing import Annotated
+
+from core.auth import CurrentUser, get_current_user
 
 from app.document.schemas import (
     DocumentUploadResponse,
@@ -86,6 +88,7 @@ async def upload_document(
     category: Annotated[str | None, Form(description="Document category, e.g. 'Quarterly Report'")] = None,
     tags: Annotated[str, Form(description="Comma-separated tags, e.g. 'q3,finance,risk'")] = "",
     access_level: Annotated[str, Form(description="Access level: company | department | private")] = "company",
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Save a file to Supabase Storage and create a document record.
@@ -175,7 +178,10 @@ async def upload_document(
         "The document must already exist (created via `POST /documents/upload`)."
     ),
 )
-async def process_document(document_id: str):
+async def process_document(
+    document_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+):
     """
     Run Extract → Chunk → Embed → Store for an already-uploaded document.
 
@@ -316,6 +322,7 @@ async def process_document(document_id: str):
 )
 async def list_documents(
     company_id: str = Query(..., description="UUID of the company to list documents for"),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
     """
     Retrieve all documents uploaded by a company.
