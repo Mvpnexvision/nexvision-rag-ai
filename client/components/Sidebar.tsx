@@ -7,7 +7,19 @@ import { useState, useRef, useEffect } from "react";
 
 import ragLogoName from "@/app/resources/rag-logoName.png";
 
+interface NavItem {
+    name: string;
+    path: string;
+    icon: string;
+}
+
+interface NavCategory {
+    title: string;
+    items: NavItem[];
+}
+
 interface SidebarProps {
+    role?: "owner" | "superadmin";
     isCollapsed: boolean;
     toggleSidebar: () => void;
     isMobileOpen: boolean;
@@ -15,6 +27,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
+    role = "owner",
     isCollapsed,
     toggleSidebar,
     isMobileOpen,
@@ -22,13 +35,47 @@ export default function Sidebar({
 }: SidebarProps) {
     const pathname = usePathname();
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [expandedCategories, setExpandedCategories] = useState<string[]>(["Main Menu"]);
     const profileRef = useRef<HTMLDivElement>(null);
 
-    const navItems = [
+    // Navigation structure based on role
+    const ownerNavItems: NavItem[] = [
         { name: "Dashboard", path: "/dashboard", icon: "fa-border-all" },
         { name: "AI Chat", path: "/chat", icon: "fa-message" },
         { name: "Documents", path: "/documents", icon: "fa-folder-open" },
     ];
+
+    const superadminNav: NavCategory[] = [
+        {
+            title: "Main Menu",
+            items: [
+                { name: "Dashboard", path: "/superadmin/dashboard", icon: "fa-border-all" },
+                { name: "AI Chat", path: "/superadmin/chat", icon: "fa-message" },
+                { name: "AI Insights", path: "/superadmin/ai-insights", icon: "fa-lightbulb" },
+                { name: "Documents", path: "/superadmin/documents", icon: "fa-folder-open" },
+                { name: "Recommendations", path: "/superadmin/recommendations", icon: "fa-star" },
+                { name: "Reports", path: "/superadmin/reports", icon: "fa-chart-bar" },
+            ],
+        },
+        {
+            title: "Manage",
+            items: [
+                { name: "Companies", path: "/superadmin/manage/companies", icon: "fa-building" },
+                { name: "Business Lines", path: "/superadmin/manage/business-lines", icon: "fa-diagram-project" },
+                { name: "Users", path: "/superadmin/manage/users", icon: "fa-users" },
+            ],
+        },
+    ];
+
+    const toggleCategory = (title: string) => {
+        setExpandedCategories((prev) =>
+            prev.includes(title)
+                ? prev.filter((cat) => cat !== title)
+                : [...prev, title]
+        );
+    };
+
+    const isSuperadmin = role === "superadmin";
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -119,30 +166,82 @@ export default function Sidebar({
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex flex-col flex-1 p-4 gap-1">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.path}
-                            href={item.path}
-                            aria-label={item.name}
-                            onClick={() => isMobileOpen && toggleMobile()}
-                            className={`
-                                flex items-center
-                                rounded-md
-                                text-sm font-medium
-                                transition-colors
-                                py-3
-                                ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
-                                ${pathname === item.path
-                                    ? "bg-[#122F35] text-[#0DBBC4]"
-                                    : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
-                                }
-                            `}
-                        >
-                            <i className={`fa-solid ${item.icon} text-lg w-5 text-center`}></i>
-                            {!isCollapsed && <span>{item.name}</span>}
-                        </Link>
-                    ))}
+                <nav className="flex flex-col flex-1 p-4 gap-1 overflow-y-auto">
+                    {isSuperadmin ? (
+                        // Superadmin categorized navigation
+                        superadminNav.map((category) => (
+                            <div key={category.title}>
+                                {/* Category header */}
+                                {!isCollapsed && (
+                                    <button
+                                        onClick={() => toggleCategory(category.title)}
+                                        className="
+                                            w-full flex items-center justify-between
+                                            px-4 py-2.5 mb-1
+                                            text-xs font-semibold text-gray-400 uppercase tracking-wider
+                                            hover:text-gray-300
+                                            transition-colors
+                                        "
+                                    >
+                                        {category.title}
+                                        <i className={`fa-solid fa-chevron-down text-xs transition-transform ${
+                                            expandedCategories.includes(category.title) ? "" : "-rotate-90"
+                                        }`}></i>
+                                    </button>
+                                )}
+
+                                {/* Category items */}
+                                {expandedCategories.includes(category.title) && category.items.map((item) => (
+                                    <Link
+                                        key={item.path}
+                                        href={item.path}
+                                        aria-label={item.name}
+                                        onClick={() => isMobileOpen && toggleMobile()}
+                                        className={`
+                                            flex items-center
+                                            rounded-md
+                                            text-sm font-medium
+                                            transition-colors
+                                            py-3 mb-1
+                                            ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
+                                            ${pathname === item.path
+                                                ? "bg-[#122F35] text-[#0DBBC4]"
+                                                : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
+                                            }
+                                        `}
+                                    >
+                                        <i className={`fa-solid ${item.icon} text-lg w-5 text-center`}></i>
+                                        {!isCollapsed && <span>{item.name}</span>}
+                                    </Link>
+                                ))}
+                            </div>
+                        ))
+                    ) : (
+                        // Owner simple navigation
+                        ownerNavItems.map((item) => (
+                            <Link
+                                key={item.path}
+                                href={item.path}
+                                aria-label={item.name}
+                                onClick={() => isMobileOpen && toggleMobile()}
+                                className={`
+                                    flex items-center
+                                    rounded-md
+                                    text-sm font-medium
+                                    transition-colors
+                                    py-3
+                                    ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
+                                    ${pathname === item.path
+                                        ? "bg-[#122F35] text-[#0DBBC4]"
+                                        : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
+                                    }
+                                `}
+                            >
+                                <i className={`fa-solid ${item.icon} text-lg w-5 text-center`}></i>
+                                {!isCollapsed && <span>{item.name}</span>}
+                            </Link>
+                        ))
+                    )}
 
                     <div className="flex-1" />
 

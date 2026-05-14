@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex h-screen overflow-hidden bg-neutral-50 w-full">
             <Sidebar
-                role="owner"
+                role="superadmin"
                 isCollapsed={isCollapsed}
                 toggleSidebar={() => setIsCollapsed(!isCollapsed)}
                 isMobileOpen={isMobileOpen}
