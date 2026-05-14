@@ -19,10 +19,12 @@ export default function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const companies: Company[] = [
-    { id: "1", name: "TechCorp Inc", businessLine: "Technology", users: 45, status: "Active", admin: "John Smith" },
-    { id: "2", name: "LogistiX Solutions", businessLine: "Logistics", users: 32, status: "Active", admin: "Jane Doe" },
-    { id: "3", name: "FinanceHub", businessLine: "Finance", users: 28, status: "Inactive", admin: "Tom Brown" },
+    { id: "1", name: "NexVision Logistics", businessLine: "Logistics", users: 45, status: "Active", admin: "John Smith" },
+    { id: "2", name: "NexVision Clinic", businessLine: "Clinic/Aesthetics", users: 32, status: "Active", admin: "Jane Doe" },
+    { id: "3", name: "NexVision HR", businessLine: "HR/Admin", users: 28, status: "Inactive", admin: "Tom Brown" },
     { id: "4", name: "RetailPro", businessLine: "Retail", users: 56, status: "Active", admin: "Sarah Wilson" },
+    { id: "5", name: "Construct Pro", businessLine: "Construction", users: 67, status: "Active", admin: "Anne Roberts" },
+    { id: "6", name: "Custom Business", businessLine: "Custom Business", users: 76, status: "Active", admin: "Riddle Hearts" },
   ];
 
   const filteredCompanies = companies.filter(company =>
