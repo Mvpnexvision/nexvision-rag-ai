@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 
 interface ChatMessageProps {
-    role: "user" | "assistant";
+    role: "user" | "assistant" | "system";
     content: React.ReactNode;
 }
 
 export default function ChatMessage({ role, content }: ChatMessageProps) {
     const isUser = role === "user";
+    const isSystem = role === "system";
     const [displayedContent, setDisplayedContent] = useState("");
 
     // Only animate if it's the assistant and the content is a string
@@ -34,12 +35,23 @@ export default function ChatMessage({ role, content }: ChatMessageProps) {
     }, [content, isUser]);
 
     return (
-        <div className={`flex gap-4 max-w-[85%] ${isUser ? "self-end flex-row-reverse" : "self-start"}`}>
+        <div
+            className={`flex gap-4 max-w-[85%] ${
+                isUser ? "self-end flex-row-reverse" : "self-start"
+            }`}
+        >
 
             {/* AI Avatar */}
-            {!isUser && (
+            {!isUser && !isSystem && (
                 <div className="w-8 h-8 rounded-md bg-black text-white flex items-center justify-center shrink-0">
                     <i className="fa-solid fa-robot"></i>
+                </div>
+            )}
+
+            {/* System Avatar */}
+            {isSystem && (
+                <div className="w-8 h-8 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                    <i className="fa-solid fa-spinner fa-spin"></i>
                 </div>
             )}
 
@@ -49,6 +61,8 @@ export default function ChatMessage({ role, content }: ChatMessageProps) {
                     px-5 py-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap
                     ${isUser
                         ? "bg-neutral-100 text-black rounded-br-sm"
+                        : isSystem
+                            ? "bg-sky-50 border border-sky-200 text-sky-900 rounded-bl-sm"
                         : "bg-white border border-gray-200 rounded-bl-sm shadow-sm"
                     }
                 `}

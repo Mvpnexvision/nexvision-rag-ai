@@ -2,14 +2,20 @@
 
 import { useRef } from "react";
 
-export default function EmptyState() {
+interface EmptyStateProps {
+    onFilesSelected: (files: File[]) => void;
+}
+
+export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Handle file selection logic here
-        if (e.target.files) {
-            console.log("Selected files:", e.target.files);
+        if (!e.target.files || e.target.files.length === 0) {
+            return;
         }
+
+        onFilesSelected(Array.from(e.target.files));
+        e.target.value = "";
     };
 
     return (

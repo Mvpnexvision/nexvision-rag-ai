@@ -53,10 +53,16 @@ export function useFetch({
       if (isMounted.current) setError(null);
 
       try {
+        const customHeaders = (config.headers as Record<string, string>) ?? {};
+        const isFormDataBody = body instanceof FormData;
+
         const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-          ...(config.headers as Record<string, string>),
+          ...customHeaders,
         };
+
+        if (!isFormDataBody && !headers["Content-Type"]) {
+          headers["Content-Type"] = "application/json";
+        }
 
         if (auth) {
           const {
