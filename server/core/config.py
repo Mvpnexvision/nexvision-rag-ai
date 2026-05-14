@@ -60,6 +60,12 @@ class Settings:
     # Supabase — PostgreSQL + pgvector (vector database)
     # ------------------------------------------------------------------
 
+    DEBUG_LOGS: bool = os.getenv("DEBUG_LOGS", "false").lower() == "true"
+    """
+    When True, debug_log() prints to stdout across all modules.
+    Set to false in production. Set to true in .env.local for development.
+    """
+
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     """
     Your Supabase project URL.
