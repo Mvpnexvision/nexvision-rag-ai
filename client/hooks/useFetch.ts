@@ -53,6 +53,7 @@ export function useFetch({
       if (isMounted.current) setError(null);
 
       try {
+        const requestUrl = `${BASE_URL}${path}`;
         const customHeaders = (config.headers as Record<string, string>) ?? {};
         const isFormDataBody = body instanceof FormData;
 
@@ -78,7 +79,7 @@ export function useFetch({
 
         const response = await axios.request<T>({
           method,
-          url: `${BASE_URL}${path}`,
+          url: requestUrl,
           data: body,
           ...config,
           headers,
@@ -89,7 +90,9 @@ export function useFetch({
         const axiosErr = err as AxiosError<{ detail?: string }>;
         const message =
           axiosErr.response?.data?.detail ??
-          axiosErr.message ??
+          (axiosErr.message === "Network Error"
+            ? `Unable to reach the API at ${BASE_URL}${path}. Please check the backend connection.`
+            : axiosErr.message) ??
           "An unexpected error occurred.";
 
         if (isMounted.current) setError(message);

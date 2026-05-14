@@ -1,211 +1,280 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, useEffect } from "react";
+import { useFetch } from "@/hooks/useFetch";
+import { useAuth } from "@/contexts/authContext";
 import RecommendationDetailCard from "./components/RecommendationDetailCard";
-import RecommendationFilterModal from "./components/RecommendationFilterModal";
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface Recommendation {
-  id: number;
-  title: string;
-  company: string;
-  date: string;
-  riskLevel: "Low" | "Medium" | "High" | "Critical";
-  status: "In Review" | "Accepted" | "Rejected" | "Completed";
-  impact: string;
+  id: string;
+  ai_question_id: string;
+  company_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  question: string;
+  direct_answer: string;
+  evidence_found: string[];
+  reasoning: string;
+  recommendation: string;
+  risk_level: "Low" | "Medium" | "High" | "Critical";
+  business_impact: string;
+  next_action: string;
+  sources: string[];
 }
 
+interface RecommendationsResponse {
+  company_id: string;
+  recommendations: Recommendation[];
+  total: number;
+}
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const RISK_COLOR: Record<string, string> = {
+  Critical: "bg-red-100 text-red-700",
+  High: "bg-orange-100 text-orange-700",
+  Medium: "bg-yellow-100 text-yellow-700",
+  Low: "bg-green-100 text-green-700",
+};
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default function RecommendationsPage() {
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [companyFilter, setCompanyFilter] = useState("All");
-  const [riskLevelFilter, setRiskLevelFilter] = useState("All");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [selectedRecommendation, setSelectedRecommendation] = useState<number>(1);
+  const { loading, error, get, patch } = useFetch();
+  const { profile, user, session, loading: authLoading } = useAuth();
 
-  const recommendations: Recommendation[] = [
-    { id: 1, title: "Review access controls", status: "In Review", date: "2026-05-14", company: "TechCorp Inc", riskLevel: "Critical", impact: "Unauthorized access may expose sensitive customer data." },
-    { id: 2, title: "Update API documentation", status: "Accepted", date: "2026-05-13", company: "LogistiX Solutions", riskLevel: "High", impact: "Incomplete docs can slow developer onboarding and increase support costs." },
-    { id: 3, title: "Optimize queries", status: "Completed", date: "2026-05-12", company: "FinanceHub", riskLevel: "Medium", impact: "Slow queries can reduce platform responsiveness during peak hours." },
-    { id: 4, title: "Implement rate limiting", status: "Rejected", date: "2026-05-14", company: "RetailPro", riskLevel: "Critical", impact: "Flooding can lead to downtime and lost revenue." },
-    { id: 5, title: "Update security headers", status: "In Review", date: "2026-05-11", company: "TechCorp Inc", riskLevel: "High", impact: "Missing headers can make the platform vulnerable to browser-based attacks." },
-  ];
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [savedRecommendations, setSavedRecommendations] = useState<Recommendation[]>([
-    { id: 101, title: "Standardize encryption keys", status: "Accepted", date: "2026-04-25", company: "FinanceHub", riskLevel: "High", impact: "Weak key management increases breach risk." },
-    { id: 102, title: "Consolidate vendor contracts", status: "In Review", date: "2026-04-18", company: "LogistiX Solutions", riskLevel: "Medium", impact: "Fragmented contracts cause payment errors." },
-  ]);
+  const riskLevelFilter = "All";
 
-  const filteredRecommendations = useMemo(() =>
-    recommendations.filter((rec) => {
-      const matchesCompany = companyFilter === "All" || rec.company === companyFilter;
-      const matchesRisk = riskLevelFilter === "All" || rec.riskLevel === riskLevelFilter;
-      const recDate = new Date(rec.date).toISOString().split("T")[0];
-      const matchesStart = !startDate || recDate >= startDate;
-      const matchesEnd = !endDate || recDate <= endDate;
-      return matchesCompany && matchesRisk && matchesStart && matchesEnd;
-    }),
-  [recommendations, companyFilter, riskLevelFilter, startDate, endDate]);
+  const companyId =
+    profile?.company_id ||
+    (typeof user?.user_metadata?.company_id === "string"
+      ? user.user_metadata.company_id
+      : undefined) ||
+    (typeof session?.user?.user_metadata?.company_id === "string"
+      ? session.user.user_metadata.company_id
+      : undefined);
 
-  const filteredSavedRecommendations = savedRecommendations;
+  // ── Fetch ──────────────────────────────────────────────────────────────────
 
-  const selectedRec = recommendations.find((rec) => rec.id === selectedRecommendation) ?? recommendations[0];
+  useEffect(() => {
+    let cancelled = false;
 
-  const onSaveRecommendation = () => {
-    if (!savedRecommendations.some((item) => item.id === selectedRec.id)) {
-      setSavedRecommendations((prev) => [
-        ...prev,
-        { ...selectedRec, id: selectedRec.id + 1000 },
-      ]);
+    async function fetchRecommendations() {
+      if (!companyId) {
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams({ company_id: companyId });
+        const data = await get<RecommendationsResponse>(
+          `/insights/recommendations?${params.toString()}`
+        );
+        if (cancelled) return;
+        setRecommendations(data.recommendations ?? []);
+        setSelectedId((prev) => prev ?? data.recommendations?.[0]?.id ?? null);
+      } catch {
+        // error is already set by useFetch
+      }
+    }
+
+    fetchRecommendations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, authLoading, get]);
+
+  // ── Status Update ──────────────────────────────────────────────────────────
+
+  const handleStatusUpdate = async (recId: string, newStatus: string) => {
+    try {
+      await patch(`/insights/recommendations/${recId}`, { status: newStatus });
+      setRecommendations((prev) =>
+        prev.map((r) => (r.id === recId ? { ...r, status: newStatus } : r))
+      );
+    } catch {
+      // error is already set by useFetch
     }
   };
 
+  // ── Derived Data ───────────────────────────────────────────────────────────
+
+  const filtered = recommendations.filter((rec) => {
+    return riskLevelFilter === "All" || rec.risk_level === riskLevelFilter;
+  });
+
+  const selectedRec = filtered.find((r) => r.id === selectedId) ?? filtered[0];
+
   const priorityStats = {
-    critical: recommendations.filter((rec) => rec.riskLevel === "Critical").length,
-    high: recommendations.filter((rec) => rec.riskLevel === "High").length,
-    medium: recommendations.filter((rec) => rec.riskLevel === "Medium").length,
+    critical: recommendations.filter((r) => r.risk_level === "Critical").length,
+    high: recommendations.filter((r) => r.risk_level === "High").length,
+    medium: recommendations.filter((r) => r.risk_level === "Medium").length,
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-medium text-black">Recommendations</h2>
-            <p className="text-gray-600 text-sm">Review recommended actions and save the most important ones.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setShowFilterModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-transparent border border-gray-200 rounded-md text-sm font-medium text-black hover:bg-neutral-50 hover:border-black transition-colors justify-center cursor-pointer focus:outline-none"
-            >
-              <i className="fa-solid fa-filter"></i> Filter
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_420px_360px] gap-6">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-sm font-semibold text-gray-600">Critical</p>
-                <p className="mt-4 text-3xl font-bold text-red-600">{priorityStats.critical}</p>
-              </div>
-              <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-sm font-semibold text-gray-600">High</p>
-                <p className="mt-4 text-3xl font-bold text-orange-600">{priorityStats.high}</p>
-              </div>
-              <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
-                <p className="text-sm font-semibold text-gray-600">Medium</p>
-                <p className="mt-4 text-3xl font-bold text-yellow-600">{priorityStats.medium}</p>
-              </div>
+    <>
+      <div className="p-8 max-w-7xl mx-auto">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          {/* Header */}
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-medium text-black">
+                Recommendations
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Review recommended actions to improve your platform.
+              </p>
             </div>
+          </div>
 
-            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recommendation List</h3>
-                <span className="text-xs text-gray-500">{filteredRecommendations.length} items</span>
+          {/* Error */}
+          {error && (
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+            <div className="space-y-6">
+              {/* Priority Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm font-semibold text-gray-600">
+                    Critical
+                  </p>
+                  <p className="mt-4 text-3xl font-bold text-red-600">
+                    {priorityStats.critical}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm font-semibold text-gray-600">High</p>
+                  <p className="mt-4 text-3xl font-bold text-orange-600">
+                    {priorityStats.high}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm font-semibold text-gray-600">Medium</p>
+                  <p className="mt-4 text-3xl font-bold text-yellow-600">
+                    {priorityStats.medium}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-3">
-                {filteredRecommendations.map((rec) => (
-                  <button
-                    key={rec.id}
-                    onClick={() => setSelectedRecommendation(rec.id)}
-                    className={`w-full text-left rounded-2xl border p-4 transition-colors ${
-                      rec.id === selectedRecommendation ? "border-black bg-white" : "border-transparent bg-white/80 hover:border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-gray-900">{rec.title}</p>
-                        <p className="text-xs text-gray-500 mt-1">{rec.company}</p>
+
+              {/* Recommendation List */}
+              <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Recommendation List
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    {filtered.length} item{filtered.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {/* Loading skeleton */}
+                {loading && recommendations.length === 0 && (
+                  <div className="space-y-3">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-full rounded-2xl border border-transparent bg-white/80 p-4 animate-pulse"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 bg-gray-200 rounded w-3/4" />
+                            <div className="h-3 bg-gray-100 rounded w-1/3" />
+                          </div>
+                          <div className="h-6 w-16 bg-gray-200 rounded" />
+                        </div>
+                        <div className="mt-3 h-3 bg-gray-100 rounded w-1/4" />
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                        rec.riskLevel === "Critical"
-                          ? "bg-red-100 text-red-700"
-                          : rec.riskLevel === "High"
-                          ? "bg-orange-100 text-orange-700"
-                          : rec.riskLevel === "Medium"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-green-100 text-green-700"
-                      }`}>{rec.riskLevel}</span>
-                    </div>
-                    <p className="mt-3 text-xs text-gray-500">{rec.date}</p>
-                  </button>
-                ))}
-                {filteredRecommendations.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-5 text-center text-sm text-gray-500">
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {!loading && filtered.length === 0 && (
+                  <div className="py-12 text-center text-sm text-gray-400">
                     No recommendations found.
                   </div>
                 )}
+
+                {/* List */}
+                <div className="space-y-3">
+                  {filtered.map((rec) => (
+                    <button
+                      key={rec.id}
+                      onClick={() => setSelectedId(rec.id)}
+                      className={`w-full text-left rounded-2xl border p-4 transition-colors ${rec.id === selectedId
+                          ? "border-black bg-white shadow-sm"
+                          : "border-transparent bg-white/80 hover:border-gray-200 hover:bg-gray-50"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {rec.recommendation}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {rec.question}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-xs font-semibold px-2 py-1 rounded shrink-0 ${RISK_COLOR[rec.risk_level] ??
+                            "bg-gray-100 text-gray-700"
+                            }`}
+                        >
+                          {rec.risk_level}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-xs text-gray-500">
+                        Created:{" "}
+                        {new Date(rec.created_at).toLocaleDateString("en-PH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-6">
-            <RecommendationDetailCard
-              title={selectedRec.title}
-              riskLevel={selectedRec.riskLevel}
-              impact={selectedRec.impact}
-              status={selectedRec.status}
-              onSave={onSaveRecommendation}
-            />
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-3xl border border-gray-200 bg-white p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-gray-900">Saved Recommendations</h3>
-                <span className="text-xs text-gray-500">{filteredSavedRecommendations.length} saved</span>
-              </div>
-              <div className="space-y-3">
-                {filteredSavedRecommendations.map((rec) => (
-                  <div key={rec.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                    <p className="font-semibold text-gray-900">{rec.title}</p>
-                    <p className="text-xs text-gray-500 mt-1">{rec.company}</p>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                        rec.riskLevel === "Critical"
-                          ? "bg-red-100 text-red-700"
-                          : rec.riskLevel === "High"
-                          ? "bg-orange-100 text-orange-700"
-                          : rec.riskLevel === "Medium"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-green-100 text-green-700"
-                      }`}>{rec.riskLevel}</span>
-                      <span className="text-xs text-gray-500">{rec.date}</span>
-                    </div>
+            {/* Detail Sidebar */}
+            <div className="space-y-6">
+              {selectedRec ? (
+                <RecommendationDetailCard
+                  recommendation={selectedRec.recommendation}
+                  reasoning={selectedRec.reasoning}
+                  next_action={selectedRec.next_action}
+                  sources={selectedRec.sources}
+                  risk_level={selectedRec.risk_level}
+                  status={selectedRec.status}
+                  onStatusUpdate={(newStatus) =>
+                    handleStatusUpdate(selectedRec.id, newStatus)
+                  }
+                />
+              ) : (
+                !loading && (
+                  <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-400">
+                    Select a recommendation to view details.
                   </div>
-                ))}
-                {filteredSavedRecommendations.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-5 text-center text-sm text-gray-500">
-                    No saved recommendations available.
-                  </div>
-                )}
-              </div>
+                )
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <RecommendationFilterModal
-        isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        companyFilter={companyFilter}
-        setCompanyFilter={setCompanyFilter}
-        riskLevelFilter={riskLevelFilter}
-        setRiskLevelFilter={setRiskLevelFilter}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
-        onClear={() => {
-          setCompanyFilter("All");
-          setRiskLevelFilter("All");
-          setStartDate("");
-          setEndDate("");
-        }}
-      />
-    </div>
+    </>
   );
 }

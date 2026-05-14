@@ -187,12 +187,7 @@ export default function Chat() {
 
                 setSelectedChatId(createdChat.chat_id);
             } catch (error) {
-                const message =
-                    error instanceof Error
-                        ? error.message
-                        : "Unable to create a chat session.";
-
-                showToast({ message, type: "error" });
+                console.error("Failed to create chat session:", error);
             } finally {
                 setIsCreatingChat(false);
             }
