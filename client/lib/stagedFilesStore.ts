@@ -23,10 +23,27 @@ export interface StagedFileRecord {
   blob: Blob;
 }
 
+let storageMode: "auto" | "indexeddb" | "memory" = "auto";
+const memoryStore = new Map<string, StagedFileRecord>();
+
 function ensureClientSide() {
   if (typeof window === "undefined" || !window.indexedDB) {
     throw new Error("IndexedDB is unavailable in this environment.");
   }
+}
+
+function useMemoryStore() {
+  storageMode = "memory";
+}
+
+function useIndexedDbStore() {
+  if (storageMode === "auto") {
+    storageMode = "indexeddb";
+  }
+}
+
+function isMemoryStoreEnabled() {
+  return storageMode === "memory";
 }
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -99,55 +116,103 @@ export function isSupportedFileType(file: File): boolean {
 }
 
 export async function listStagedFiles(): Promise<StagedFileRecord[]> {
-  return withStore("readonly", (store) => {
-    return new Promise<StagedFileRecord[]>((resolve, reject) => {
-      const request = store.getAll();
-      request.onerror = () => reject(new Error("Failed to read staged files."));
-      request.onsuccess = () => {
-        const rows = (request.result as StagedFileRecord[]) ?? [];
-        resolve(rows);
-      };
+  if (isMemoryStoreEnabled()) {
+    return Array.from(memoryStore.values());
+  }
+
+  try {
+    const rows = await withStore("readonly", (store) => {
+      return new Promise<StagedFileRecord[]>((resolve, reject) => {
+        const request = store.getAll();
+        request.onerror = () => reject(new Error("Failed to read staged files."));
+        request.onsuccess = () => {
+          const rows = (request.result as StagedFileRecord[]) ?? [];
+          resolve(rows);
+        };
+      });
     });
-  });
+
+    useIndexedDbStore();
+    return rows;
+  } catch {
+    useMemoryStore();
+    return Array.from(memoryStore.values());
+  }
 }
 
 export async function saveStagedFiles(files: File[]): Promise<StagedFileRecord[]> {
-  return withStore("readwrite", async (store) => {
-    const records = files.map(toStagedRecord);
+  const records = files.map(toStagedRecord);
 
-    await Promise.all(
-      records.map(
-        (record) =>
-          new Promise<void>((resolve, reject) => {
-            const request = store.put(record);
-            request.onerror = () => reject(new Error(`Failed to stage file '${record.name}'.`));
-            request.onsuccess = () => resolve();
-          }),
-      ),
-    );
-
+  if (isMemoryStoreEnabled()) {
+    records.forEach((record) => memoryStore.set(record.id, record));
     return records;
-  });
+  }
+
+  try {
+    await withStore("readwrite", async (store) => {
+      await Promise.all(
+        records.map(
+          (record) =>
+            new Promise<void>((resolve, reject) => {
+              const request = store.put(record);
+              request.onerror = () => reject(new Error(`Failed to stage file '${record.name}'.`));
+              request.onsuccess = () => resolve();
+            }),
+        ),
+      );
+
+      return records;
+    });
+
+    useIndexedDbStore();
+    return records;
+  } catch {
+    useMemoryStore();
+    records.forEach((record) => memoryStore.set(record.id, record));
+    return records;
+  }
 }
 
 export async function removeStagedFile(id: string): Promise<void> {
-  return withStore("readwrite", (store) => {
-    return new Promise<void>((resolve, reject) => {
-      const request = store.delete(id);
-      request.onerror = () => reject(new Error("Failed to remove staged file."));
-      request.onsuccess = () => resolve();
+  if (isMemoryStoreEnabled()) {
+    memoryStore.delete(id);
+    return;
+  }
+
+  try {
+    await withStore("readwrite", (store) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = store.delete(id);
+        request.onerror = () => reject(new Error("Failed to remove staged file."));
+        request.onsuccess = () => resolve();
+      });
     });
-  });
+    useIndexedDbStore();
+  } catch {
+    useMemoryStore();
+    memoryStore.delete(id);
+  }
 }
 
 export async function clearStagedFiles(): Promise<void> {
-  return withStore("readwrite", (store) => {
-    return new Promise<void>((resolve, reject) => {
-      const request = store.clear();
-      request.onerror = () => reject(new Error("Failed to clear staged files."));
-      request.onsuccess = () => resolve();
+  if (isMemoryStoreEnabled()) {
+    memoryStore.clear();
+    return;
+  }
+
+  try {
+    await withStore("readwrite", (store) => {
+      return new Promise<void>((resolve, reject) => {
+        const request = store.clear();
+        request.onerror = () => reject(new Error("Failed to clear staged files."));
+        request.onsuccess = () => resolve();
+      });
     });
-  });
+    useIndexedDbStore();
+  } catch {
+    useMemoryStore();
+    memoryStore.clear();
+  }
 }
 
 export function toFile(record: StagedFileRecord): File {

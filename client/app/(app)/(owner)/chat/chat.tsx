@@ -8,6 +8,7 @@ import { useToast } from "@/components/Toast";
 import { useAuth } from "@/contexts/authContext";
 import {
     AIOutput,
+    CreateChatResponse,
     useChatWorkflowApi,
 } from "@/hooks/useChatWorkflowApi";
 import {
@@ -113,16 +114,27 @@ export default function Chat() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedChatId, setSelectedChatId] = useState<string>(CHAT_HISTORY[0].id);
+    const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+    const [isCreatingChat, setIsCreatingChat] = useState(false);
     const { showToast } = useToast();
     const { profile, user, loading: authLoading, session } = useAuth();
     const {
+        createChat,
         uploadDocument,
         linkDocumentsToChat,
         processDocument,
         getDocumentStatus,
         sendAIChat,
     } = useChatWorkflowApi();
+
+    const companyId =
+        profile?.company_id ||
+        (typeof user?.user_metadata?.company_id === "string"
+            ? user.user_metadata.company_id
+            : undefined) ||
+        (typeof session?.user?.user_metadata?.company_id === "string"
+            ? session.user.user_metadata.company_id
+            : undefined);
 
     useEffect(() => {
         const loadStagedFiles = async () => {
@@ -140,14 +152,43 @@ export default function Chat() {
         void loadStagedFiles();
     }, [showToast]);
 
-    const companyId =
-        profile?.company_id ||
-        (typeof user?.user_metadata?.company_id === "string"
-            ? user.user_metadata.company_id
-            : undefined) ||
-        (typeof session?.user?.user_metadata?.company_id === "string"
-            ? session.user.user_metadata.company_id
-            : undefined);
+    useEffect(() => {
+        const ensureRealChat = async () => {
+            if (authLoading || isCreatingChat || selectedChatId) {
+                return;
+            }
+
+            if (!user?.id || !companyId) {
+                return;
+            }
+
+            setIsCreatingChat(true);
+
+            try {
+                const createdChat: CreateChatResponse = await createChat({
+                    companyId,
+                    userId: user.id,
+                    title: "New Chat",
+                });
+
+                setSelectedChatId(createdChat.chat_id);
+            } catch (error) {
+                const message =
+                    error instanceof Error
+                        ? error.message
+                        : "Unable to create a chat session.";
+
+                showToast({
+                    message,
+                    type: "error",
+                });
+            } finally {
+                setIsCreatingChat(false);
+            }
+        };
+
+        void ensureRealChat();
+    }, [authLoading, companyId, createChat, isCreatingChat, selectedChatId, showToast, user?.id]);
 
     const replaceSystemMessage = (messageId: string, text: string) => {
         setMessages((prev) => {
@@ -286,6 +327,22 @@ export default function Chat() {
             return;
         }
 
+        if (!selectedChatId) {
+            showToast({
+                message: "Creating your chat session. Please try again in a moment.",
+                type: "info",
+            });
+            return;
+        }
+
+        if (selectedChatId.startsWith("existing-chat-")) {
+            showToast({
+                message: "This chat is a placeholder. Please wait for a real chat session to initialize.",
+                type: "info",
+            });
+            return;
+        }
+
         setIsSubmitting(true);
 
         const userMessage: Message = {
@@ -388,7 +445,12 @@ export default function Chat() {
                                         <button
                                             key={item.id}
                                             type="button"
-                                            onClick={() => setSelectedChatId(item.id)}
+                                            onClick={() => {
+                                                showToast({
+                                                    message: "Chat history is currently a visual placeholder.",
+                                                    type: "info",
+                                                });
+                                            }}
                                             className={`w-full text-left px-3 py-2 text-sm rounded-lg truncate transition-colors ${
                                                 selectedChatId === item.id
                                                     ? "bg-neutral-200"

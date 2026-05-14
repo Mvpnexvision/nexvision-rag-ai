@@ -16,6 +16,12 @@ export interface LinkDocumentsResponse {
   linked_document_ids: string[];
 }
 
+export interface CreateChatResponse {
+  chat_id: string;
+  title: string;
+  company_id: string;
+}
+
 export interface DocumentStatusResponse {
   document_id: string;
   file_name: string;
@@ -49,6 +55,11 @@ export interface AIChatResponse {
 interface UseChatWorkflowApiReturn {
   loading: boolean;
   error: string | null;
+  createChat: (params: {
+    companyId: string;
+    userId: string;
+    title?: string;
+  }) => Promise<CreateChatResponse>;
   uploadDocument: (params: {
     file: File;
     companyId: string;
@@ -71,6 +82,22 @@ interface UseChatWorkflowApiReturn {
 
 export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
   const { loading, error, get, post } = useFetch({ auth: true });
+
+  const createChat = async ({
+    companyId,
+    userId,
+    title = "New Chat",
+  }: {
+    companyId: string;
+    userId: string;
+    title?: string;
+  }): Promise<CreateChatResponse> => {
+    return post<CreateChatResponse>("/insights/chat/new", {
+      company_id: companyId,
+      user_id: userId,
+      title,
+    });
+  };
 
   const uploadDocument = async ({
     file,
@@ -138,6 +165,7 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
   return {
     loading,
     error,
+    createChat,
     uploadDocument,
     linkDocumentsToChat,
     processDocument,
