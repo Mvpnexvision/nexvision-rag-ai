@@ -3,11 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, useRef, useEffect, type ReactElement } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import ragLogoName from "@/app/resources/rag-logoName.png";
 import { useAuth } from "@/contexts/authContext";
-import { debugLog } from "@/utils/logger";
 
 interface NavItem {
     name: string;
@@ -51,20 +50,15 @@ export default function Sidebar({
         {
             title: "Main Menu",
             items: [
-                { name: "Dashboard", path: "/superadmin/dashboard", icon: "fa-border-all" },
-                { name: "AI Chat", path: "/superadmin/chat", icon: "fa-message" },
-                { name: "AI Insights", path: "/superadmin/ai-insights", icon: "fa-lightbulb" },
-                { name: "Documents", path: "/superadmin/documents", icon: "fa-folder-open" },
-                { name: "Recommendations", path: "/superadmin/recommendations", icon: "fa-star" },
-                { name: "Reports", path: "/superadmin/reports", icon: "fa-chart-bar" },
+                { name: "Dashboard", path: "/dashboard_admin", icon: "fa-border-all" },
             ],
         },
         {
             title: "Manage",
             items: [
-                { name: "Companies", path: "/superadmin/manage/companies", icon: "fa-building" },
-                { name: "Business Lines", path: "/superadmin/manage/business-lines", icon: "fa-diagram-project" },
-                { name: "Users", path: "/superadmin/manage/users", icon: "fa-users" },
+                { name: "Companies", path: "/manage_admin/companies", icon: "fa-building" },
+                { name: "Business Lines", path: "/manage_admin/business-lines", icon: "fa-diagram-project" },
+                { name: "Users", path: "/manage_admin/users", icon: "fa-users" },
             ],
         },
     ];
@@ -78,6 +72,17 @@ export default function Sidebar({
     };
 
     const isSuperadmin = role === "superadmin";
+    const { profile } = useAuth();
+    const displayName = profile?.name ?? "Unknown User";
+    const displayRole = profile?.role ?? role;
+    const avatarInitials = profile?.name
+        ? profile.name
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase()
+        : displayRole.charAt(0).toUpperCase();
 
     // Close dropdown when clicking outside
     useEffect(() => {
