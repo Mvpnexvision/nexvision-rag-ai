@@ -28,7 +28,7 @@ class DocumentChunk(BaseModel):
     chunk_id: str = Field(..., description="Unique identifier for this chunk (UUID)")
     document_id: str = Field(..., description="ID of the parent document")
     company_id: str = Field(..., description="Company this document belongs to")
-    text: str = Field(..., description="Raw text content of the chunk")
+    chunk_text: str = Field(..., description="Raw text content of the chunk")
     embedding: list[float] = Field(
         ..., description="1536-dimensional vector from gemini-embedding-001"
     )

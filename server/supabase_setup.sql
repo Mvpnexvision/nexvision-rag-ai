@@ -4,8 +4,6 @@
 -- BREAKING CHANGES from v4:
 --   - recommendations: removed assigned_to, due_date, notes
 --     (only status is tracked — no user assignment workflow)
---   - ai_questions: added suggested_due_date (AI-suggested deadline)
---   - AIOutputJSON now includes suggested_due_date field
 --
 -- Run this entire script ONCE in Supabase SQL Editor.
 -- If migrating from v4, see the migration notes at the bottom.
@@ -132,7 +130,7 @@ create trigger on_auth_user_created
 create table if not exists documents (
     id                 uuid primary key default gen_random_uuid(),
     company_id         uuid not null references companies(id) on delete cascade,
-    uploaded_by        uuid not null references users(id) on delete set null,
+    uploaded_by        uuid not null references users(id) on delete cascade,
     file_name          text not null,
     file_type          text not null,
     file_url           text not null,
@@ -292,12 +290,7 @@ create index if not exists ai_chat_documents_document_idx on ai_chat_documents (
 
 -- ------------------------------------------------------------
 -- Table: ai_questions
--- CHANGED from v4:
---   + suggested_due_date  text
---     AI-suggested deadline for the recommended action (YYYY-MM-DD).
---     Inferred from urgency in the question and document context.
---     Written to recommendations.due_date when a recommendation is created.
---     Null if the AI sees no time-sensitive urgency.
+-- NO CHANGES from v4:
 -- ------------------------------------------------------------
 create table if not exists ai_questions (
     id                  uuid primary key default gen_random_uuid(),
@@ -318,7 +311,6 @@ create table if not exists ai_questions (
     next_action         text,
     missing_data        jsonb default '[]'::jsonb, -- missing_data[]
     sources_json        jsonb default '[]'::jsonb,
-    suggested_due_date  text,                      -- ← NEW: YYYY-MM-DD or null
 
     -- Insight flag — set by AI when data is sufficient for an actionable recommendation
     has_insight         boolean not null default false,
