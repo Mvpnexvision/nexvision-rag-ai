@@ -12,17 +12,17 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
       <div className="bg-white p-8 sm:p-12 rounded-xl shadow-sm border border-gray-200 w-full max-w-md">
-        <div className="text-2xl font-semibold mb-8 flex items-center gap-2">
-          <i className="fa-solid fa-layer-group"></i> DocuAI
+        <div className="text-2xl font-semibold mb-8 flex items-center gap-2 text-black">
+          <i className="fa-solid fa-layer-group "></i> DocuAI
         </div>
-        <h2 className="text-xl font-medium mb-2">Welcome back</h2>
+        <h2 className="text-xl font-medium mb-2 text-black">Welcome back</h2>
         <p className="text-gray-500 text-sm mb-8">
           Enter your details to access your workspace.
         </p>
 
         <form onSubmit={handleLogin}>
           <div className="mb-5">
-            <label className="block text-sm font-medium mb-2" htmlFor="email">
+            <label className="block text-sm font-medium mb-2 text-black" htmlFor="email">
               Email
             </label>
             <input
@@ -30,11 +30,11 @@ export default function Login() {
               id="email"
               placeholder="name@company.com"
               required
-              className="w-full p-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black transition-colors"
+              className="w-full p-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black transition-colors text-black"
             />
           </div>
           <div className="mb-5">
-            <label className="block text-sm font-medium mb-2" htmlFor="password">
+            <label className="block text-sm font-medium mb-2 text-black" htmlFor="password">
               Password
             </label>
             <input
@@ -42,7 +42,7 @@ export default function Login() {
               id="password"
               placeholder="••••••••"
               required
-              className="w-full p-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black transition-colors"
+              className="w-full p-3 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black transition-colors text-black"
             />
           </div>
           <div className="flex justify-end mb-6 text-sm">

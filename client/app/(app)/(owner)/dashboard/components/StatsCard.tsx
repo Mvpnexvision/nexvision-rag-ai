@@ -11,7 +11,7 @@ const stats: Stat[] = [
     { icon: "fa-solid fa-file-lines", label: "Total Files", value: "142", iconColor: "text-blue-500" },
     { icon: "fa-solid fa-comments", label: "AI Questions", value: "87", iconColor: "text-purple-500" },
     { icon: "fa-solid fa-bolt", label: "AI Insights", value: "1,048", iconColor: "text-amber-500" },
-    { icon: "fa-solid fa-triangle-exclamation", label: "High Risk Items", value: "85%", iconColor: "text-red-500" },
+    { icon: "fa-solid fa-triangle-exclamation", label: "Critical Risk Items", value: "3", iconColor: "text-red-500" },
     { icon: "fa-solid fa-circle-info", label: "Recommendations", value: "32", iconColor: "text-emerald-500" },
 ];
 
@@ -21,7 +21,7 @@ export default function StatsCards() {
             {stats.map((stat) => (
                 <div
                     key={stat.label}
-                    className="bg-white p-6 rounded-xl border border-gray-200 flex items-center gap-4 flex-1 min-w-[200px]"
+                    className="bg-white p-6 rounded-xl border border-gray-200 flex items-center gap-4 flex-1 min-w-50"
                 >
                     {/* Icon inside a colored circle */}
                     <div className="w-12 h-12 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center shrink-0">

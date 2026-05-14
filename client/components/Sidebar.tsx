@@ -58,7 +58,7 @@ export default function Sidebar({
                     bg-[#101B1D]
                     border-r border-[#122F35]
                     transition-all duration-300 ease-in-out
-                    ${isCollapsed ? "w-[72px]" : "w-[260px]"}
+                    ${isCollapsed ? "w-18" : "w-65"}
                     ${isMobileOpen
                         ? "translate-x-0"
                         : "-translate-x-full md:translate-x-0"
@@ -94,7 +94,7 @@ export default function Sidebar({
                             hover:bg-[#122F35]
                             hover:text-[#0DBBC4]
                             transition-colors
-                            flex-shrink-0
+                            shrink-0
                         "
                     >
                         <i className="fa-solid fa-bars"></i>
@@ -212,8 +212,8 @@ export default function Sidebar({
                         >
                             {/* Avatar */}
                             <div className="
-                                w-8 h-8 rounded-full flex-shrink-0
-                                bg-gradient-to-br from-[#0DBBC4]/30 to-[#0DBBC4]/10
+                                w-8 h-8 rounded-full shrink-0
+                                bg-linear-to-br from-[#0DBBC4]/30 to-[#0DBBC4]/10
                                 border border-[#0DBBC4]/30
                                 flex items-center justify-center
                             ">
