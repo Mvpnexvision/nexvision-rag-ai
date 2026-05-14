@@ -30,7 +30,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from app.document.router import router as document_router
-from app.documents.router import router as documents_router
 from app.reasoning.router import router as reasoning_router
 from app.dashboard.router import router as dashboard_router
 
@@ -72,11 +71,8 @@ app.add_middleware(
 # Swagger groups endpoints by the `tags` value set inside each router.
 # ---------------------------------------------------------------------------
 
-# Document Module: /documents/upload, /documents/{id}/process, GET /documents
+# Document Module: /documents/upload, /documents/{id}/process, /documents/list, etc.
 app.include_router(document_router, prefix="/documents", tags=["Document Module"])
-
-# Documents Module: /documents/list, DELETE /documents/{id} (documents page)
-app.include_router(documents_router, prefix="/documents", tags=["Documents Module"])
 
 # Reasoning Module: /ai/chat, /ai/questions, /insights/generate
 app.include_router(reasoning_router, tags=["Reasoning Module"])
