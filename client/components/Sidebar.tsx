@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
+import { debugLog } from "@/utils/logger";
 
 import ragLogoName from "@/app/resources/rag-logoName.png";
 import { useAuth } from "@/contexts/authContext";
@@ -72,7 +73,7 @@ export default function Sidebar({
     };
 
     const isSuperadmin = role === "superadmin";
-    const { profile } = useAuth();
+    const { profile, signOut } = useAuth();
     const displayName = profile?.name ?? "Unknown User";
     const displayRole = profile?.role ?? role;
     const avatarInitials = profile?.name
@@ -279,8 +280,12 @@ export default function Sidebar({
                                     <span>Settings</span>
                                 </button>
 
-                                <Link
-                                    href="/"
+                                <button
+                                    onClick={() => {
+                                        debugLog("AUTH", "Sidebar logout click");
+                                        void signOut();
+                                        if (isMobileOpen) toggleMobile();
+                                    }}
                                     className="
                                         flex items-center gap-3
                                         px-4 py-2.5
@@ -292,7 +297,7 @@ export default function Sidebar({
                                 >
                                     <i className="fa-solid fa-arrow-right-from-bracket w-4 text-center text-gray-400"></i>
                                     <span>Log out</span>
-                                </Link>
+                                </button>
                             </div>
                         )}
 
