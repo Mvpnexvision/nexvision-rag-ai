@@ -1,11 +1,13 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { debugLog } from "@/utils/logger";
 
 export default function ForgotPassword() {
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    debugLog("AUTH", "Forgot password submit");
     router.push("/login");
   };
 
@@ -22,7 +24,10 @@ export default function ForgotPassword() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-5">
-            <label className="block text-sm font-medium mb-2 text-black" htmlFor="email">
+            <label
+              className="block text-sm font-medium mb-2 text-black"
+              htmlFor="email"
+            >
               Email
             </label>
             <input
@@ -35,6 +40,7 @@ export default function ForgotPassword() {
           </div>
           <button
             type="submit"
+            onClick={() => debugLog("AUTH", "Forgot password button")}
             className="w-full bg-black text-white hover:bg-neutral-800 px-5 py-3 rounded-md text-sm font-medium transition-colors"
           >
             Reset Password
@@ -42,7 +48,10 @@ export default function ForgotPassword() {
         </form>
 
         <p className="text-center mt-8 text-sm text-gray-500">
-          Remembered your password? <a href="/login" className="font-semibold text-black">Log in</a>
+          Remembered your password?{" "}
+          <a href="/login" className="font-semibold text-black">
+            Log in
+          </a>
         </p>
       </div>
     </div>

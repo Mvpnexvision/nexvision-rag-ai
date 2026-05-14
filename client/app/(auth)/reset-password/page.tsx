@@ -1,11 +1,13 @@
 ﻿"use client";
 import { useRouter } from "next/navigation";
+import { debugLog } from "@/utils/logger";
 
 export default function ResetPassword() {
   const router = useRouter();
 
   const handleReset = (e: React.FormEvent) => {
     e.preventDefault();
+    debugLog("AUTH", "Reset password submit");
     router.push("/login");
   };
 
@@ -22,7 +24,10 @@ export default function ResetPassword() {
 
         <form onSubmit={handleReset}>
           <div className="mb-5">
-            <label className="block text-sm font-medium mb-2 text-black" htmlFor="email">
+            <label
+              className="block text-sm font-medium mb-2 text-black"
+              htmlFor="email"
+            >
               Email
             </label>
             <input
@@ -36,6 +41,7 @@ export default function ResetPassword() {
 
           <button
             type="submit"
+            onClick={() => debugLog("AUTH", "Reset password button")}
             className="w-full bg-black text-white p-3 rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors mb-6"
           >
             Send Reset Link
@@ -52,4 +58,3 @@ export default function ResetPassword() {
     </div>
   );
 }
-
