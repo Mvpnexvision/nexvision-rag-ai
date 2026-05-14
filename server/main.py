@@ -33,7 +33,7 @@ from app.document.router import router as document_router
 from app.insight.router import router as insight_router
 from app.dashboard.router import router as dashboard_router
 from app.auth.router import router as auth_router
-# from app.reports.router import router as reports_router
+from app.reports.router import router as reports_router
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -86,7 +86,7 @@ app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard Modul
 app.include_router(auth_router, prefix="/auth", tags=["Auth Module"])
 
 # Reports Module: /reports/generate, GET /reports
-# app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
+app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
 
 
 # ---------------------------------------------------------------------------
