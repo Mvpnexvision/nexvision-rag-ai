@@ -3,7 +3,7 @@ app/document/services/embedder.py
 ============================================
 STAGE 3 of the document pipeline: Embed
 
-Responsibility: Convert each text chunk into a 768-dimensional vector
+Responsibility: Convert each text chunk into a 1536-dimensional vector
 using Google's gemini-embedding-001 model via the Gemini API.
 
 What is an embedding?
@@ -13,8 +13,8 @@ What is an embedding?
     "semantically related" chunks for a query, rather than doing keyword matching.
 
 gemini-embedding-001 output:
-    768 floats per chunk.
-    Example: "Q3 revenue declined" → [0.023, -0.441, 0.887, ...(768 total)]
+    1536 floats per chunk.
+    Example: "Q3 revenue declined" → [0.023, -0.441, 0.887, ...(1536 total)]
 
 Rate limiting note:
     The Gemini free tier has per-minute limits. For large documents, embed
@@ -44,7 +44,7 @@ async def embed_chunks(chunks: list[dict], batch_size: int = 10) -> list[dict]:
 
     Returns:
         list[dict]: Same chunk dicts, each now including:
-            - embedding (list[float]): 768-dimensional vector
+            - embedding (list[float]): 1536-dimensional vector
 
     Raises:
         RuntimeError: If the Gemini API returns an unexpected response shape.
@@ -119,11 +119,11 @@ async def embed_single_text(text: str, task_type: str = "RETRIEVAL_QUERY") -> li
         task_type (str):  Gemini task type hint for the embedding.
 
     Returns:
-        list[float]: 768-dimensional embedding vector.
+        list[float]: 1536-dimensional embedding vector.
 
     Example:
         query_vector = await embed_single_text("What is our Q3 cash flow risk?")
-        # → [0.031, -0.512, 0.774, ...]  (768 numbers)
+        # → [0.031, -0.512, 0.774, ...]  (1536 numbers)
     """
     client = get_gemini_client()
     model_name = get_embedding_model()

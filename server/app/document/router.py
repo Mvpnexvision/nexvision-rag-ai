@@ -35,7 +35,6 @@ from app.document.schemas import (
     DocumentListResponse,
     DocumentRecord,
     DocumentDeleteResponse,
-    AccessLevel,
 )
 from app.document.services.extractor import extract_text_from_bytes, get_file_type
 from app.document.services.chunker import chunk_text
@@ -87,7 +86,6 @@ async def upload_document(
     department: Annotated[str | None, Form(description="Department, e.g. 'Accounts Payable'")] = None,
     category: Annotated[str | None, Form(description="Document category, e.g. 'Quarterly Report'")] = None,
     tags: Annotated[str, Form(description="Comma-separated tags, e.g. 'q3,finance,risk'")] = "",
-    access_level: Annotated[str, Form(description="Access level: company | department | private")] = "company",
     current_user: CurrentUser = Depends(get_current_user),
 ):
     """
@@ -103,7 +101,6 @@ async def upload_document(
     - `uploaded_by` — uploader's Supabase Auth UID
     - `business_line`, `department`, `category` — optional classification
     - `tags` — comma-separated string, e.g. "q3,finance,vendor"
-    - `access_level` — "company" | "department" | "private"
     """
     filename = file.filename or "document"
 
@@ -142,7 +139,6 @@ async def upload_document(
         department=department,
         category=category,
         tags=tag_list,
-        access_level=access_level,
     )
 
     return DocumentUploadResponse(
@@ -171,7 +167,7 @@ async def upload_document(
         "uploaded document:\n\n"
         "1. **Extracting** — read text/data from the stored file\n"
         "2. **Chunking** — split into overlapping segments\n"
-        "3. **Embedded** — create 768-dim vectors via Gemini\n"
+        "3. **Embedded** — create 1536-dim vectors via Gemini\n"
         "4. **AI Ready** — document available for AI Chat and Insights\n\n"
         "Status is updated in the database at each stage. If any stage fails, "
         "status is set to **Failed** with an error detail.\n\n"
@@ -351,7 +347,6 @@ async def list_documents(
                 department=r.get("department"),
                 category=r.get("category"),
                 tags=r.get("tags") or [],
-                access_level=r.get("access_level", "company"),
                 processing_status=r.get("processing_status", "Uploaded"),
                 summary=r.get("summary"),
                 created_at=str(r.get("created_at", "")),

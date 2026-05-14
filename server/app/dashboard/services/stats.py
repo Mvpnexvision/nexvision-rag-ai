@@ -70,12 +70,24 @@ async def get_dashboard_stats(company_id: str) -> dict:
         high_risk_count = 0
         
         if recs_result.data:
-            total_recommendations = len(recs_result.data)
-            # Count critical risk items only
-            for rec in recs_result.data:
-                risk = rec.get("risk_level")
-                if risk == "Critical":
-                    high_risk_count += 1
+            # Count high-risk items from ai_questions where has_insight=true and risk_level='Critical'
+            high_risk_result = (
+                sb.table("ai_questions")
+                .select("id")
+                .eq("company_id", company_id)
+                .eq("has_insight", True)
+                .eq("risk_level", "Critical")
+                .execute()
+            )
+            high_risk_count = len(high_risk_result.data) if high_risk_result.data else 0
+
+            recs_result = (
+                sb.table("recommendations")
+                .select("id")
+                .eq("company_id", company_id)
+                .execute()
+            )
+            total_recommendations = len(recs_result.data) if recs_result.data else 0
         
         return {
             "total_files": total_files,

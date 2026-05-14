@@ -102,7 +102,7 @@ async def get_top_recommendations(company_id: str, limit: int = 6) -> list[dict]
     try:
         result = (
             sb.table("recommendations")
-            .select("id, title, risk_level")
+            .select("id, ai_question_id, ai_questions(question, risk_level)")
             .eq("company_id", company_id)
             .order("created_at", desc=True)
             .limit(limit)
@@ -115,8 +115,8 @@ async def get_top_recommendations(company_id: str, limit: int = 6) -> list[dict]
             for row in result.data:
                 recommendations.append({
                     "id": row.get("id"),
-                    "title": row.get("title", ""),
-                    "risk_level": row.get("risk_level", "Low"),
+                    "title": (row.get("ai_questions") or {}).get("question", ""),
+                    "risk_level": (row.get("ai_questions") or {}).get("risk_level", "Low"),
                 })
         
         return recommendations
