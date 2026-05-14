@@ -1,5 +1,5 @@
 """
-modules/rag_module/services/retriever.py
+app/rag/services/retriever.py
 =========================================
 STAGE 5 of the pipeline: Retrieve
 
@@ -29,7 +29,7 @@ async def retrieve_relevant_chunks(
 
     Flow:
         question (str)
-            → Gemini text-embedding-004 (RETRIEVAL_QUERY task type)
+            → Gemini gemini-embedding-001 (RETRIEVAL_QUERY task type)
             → 1536-float query vector
             → Supabase pgvector cosine similarity search
             → top_k chunks ranked by semantic closeness

@@ -1,5 +1,5 @@
 """
-modules/document_module/services/extractor.py
+app/document/services/extractor.py
 =============================================
 STAGE 1 of the document pipeline: Extract
 
