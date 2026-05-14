@@ -10,12 +10,13 @@ Endpoints:
     POST  /chat/{chat_id}/documents    Link existing documents to a chat
     GET   /chat/{chat_id}              Get chat metadata + document list
     GET   /chat/{chat_id}/messages     Get all questions/answers for a chat
+    GET   /chat                        Get all chats for a company admin
 
     POST  /ai/chat                     Ask a question (runs full RAG pipeline)
     GET   /ai/questions                Get question history for a chat
 
     GET   /recommendations             List all recommendations for a company (JOINed with ai_questions)
-    PATCH /recommendations/{id}        Update status/assignee/due_date/notes only
+    PATCH /recommendations/{id}        Update status only
 
 All endpoints are company-scoped via current_user from JWT.
 All endpoints visible in Swagger at: http://localhost:8000/docs
@@ -32,6 +33,8 @@ from core.config import settings
 from core.logger import debug_log
 
 from app.insight.schemas import (
+    ChatListItem,
+    ChatListResponse,
     LinkDocumentsRequest,
     NewChatRequest,
     NewChatResponse,
@@ -101,6 +104,11 @@ async def _save_ai_question(
     try:
         sb.table("ai_questions").insert(record).execute()
         debug_log("REASONING", f"Saved ai_question {question_id} (has_insight={has_insight})")
+
+        # Bump ai_chats.updated_at so list_chats sorts by most recently active
+        sb.table("ai_chats").update(
+            {"updated_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("id", chat_id).execute()
     except Exception as exc:
         # Don't fail the API response if the DB write fails — log and continue
         print(f"[WARN] Failed to save ai_question: {exc}")
@@ -292,6 +300,72 @@ async def get_chat_messages(
         chat_id=chat_id,
         questions=questions,
         total=len(questions),
+    )
+
+# ── GET /chat ──────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/chat",
+    response_model=ChatListResponse,
+    summary="List all chat sessions for a user",
+    description=(
+        "Returns all chat sessions belonging to the authenticated user "
+        "within a company, ordered by most recently updated first.\n\n"
+        "Use `limit` and `offset` for pagination."
+    ),
+)
+async def list_chats(
+    company_id: str = Query(..., description="UUID of the company"),
+    limit: int = Query(default=20, ge=1, le=100, description="Results per page"),
+    offset: int = Query(default=0, ge=0, description="Pagination offset"),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """List paginated chat sessions for the current user within a company."""
+    sb = get_supabase_client()
+
+    # Count total for pagination metadata
+    count_result = (
+        sb.table("ai_chats")
+        .select("id", count="exact")
+        .eq("company_id", company_id)
+        .eq("user_id", current_user.id)
+        .execute()
+    )
+    total = count_result.count or 0
+
+    # Fetch paginated rows
+    result = (
+        sb.table("ai_chats")
+        .select("id, company_id, user_id, title, document_ids, created_at, updated_at")
+        .eq("company_id", company_id)
+        .eq("user_id", current_user.id)
+        .order("updated_at", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+
+    chats: list[ChatListItem] = []
+    for row in result.data or []:
+        raw_ids = row.get("document_ids") or "[]"
+        doc_ids = json.loads(raw_ids) if isinstance(raw_ids, str) else list(raw_ids)
+
+        chats.append(ChatListItem(
+            chat_id=row["id"],
+            title=row.get("title", "New Chat"),
+            company_id=row["company_id"],
+            user_id=row["user_id"],
+            document_ids=doc_ids,
+            created_at=str(row.get("created_at", "")),
+            updated_at=str(row.get("updated_at", "")),
+        ))
+
+    return ChatListResponse(
+        user_id=current_user.id,
+        company_id=company_id,
+        chats=chats,
+        total=total,
+        limit=limit,
+        offset=offset,
     )
 
 
