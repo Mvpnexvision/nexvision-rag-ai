@@ -4,8 +4,7 @@ app/document/schemas.py
 Request and response schemas for the Document Module.
 
 Aligned to the `documents` table spec:
-    company_id, uploaded_by, file_name, file_type, file_url,
-    business_line, department, category, tags, access_level,
+    company_id, uploaded_by, file_name, file_type, file_url, tags,
     processing_status, summary, created_at
 
 Processing status values (per spec):
@@ -27,9 +26,7 @@ ProcessingStatus = Literal[
     "Failed",
 ]
 
-FileType = Literal["PDF", "DOCX", "XLSX", "CSV", "TXT"]
-
-AccessLevel = Literal["company", "department", "private"]
+FileType = Literal["PDF", "DOCX", "XLSX", "CSV", "TXT", "MD"]
 
 
 # ── Upload endpoint ────────────────────────────────────────────────────────────
@@ -44,20 +41,7 @@ class DocumentUploadRequest(BaseModel):
 
     company_id: str = Field(..., description="UUID of the owning company")
     uploaded_by: str = Field(..., description="UUID of the uploading user (Supabase Auth UID)")
-    business_line: str | None = Field(None, description="Business line classification, e.g. 'Finance'")
-    department: str | None = Field(None, description="Department label, e.g. 'Accounts Payable'")
-    category: str | None = Field(None, description="Document category, e.g. 'Quarterly Report'")
     tags: list[str] = Field(default_factory=list, description="Free-form tags for search/filtering")
-    access_level: AccessLevel = Field(
-        default="company",
-        description=(
-            "Who can access this document: "
-            "'company' = all company users, "
-            "'department' = same department only, "
-            "'private' = uploader only"
-        ),
-    )
-
 
 class DocumentUploadResponse(BaseModel):
     """
@@ -109,13 +93,10 @@ class DocumentRecord(BaseModel):
     file_name: str
     file_type: str
     file_url: str
-    business_line: str | None
-    department: str | None
-    category: str | None
     tags: list[str]
-    access_level: str
     processing_status: ProcessingStatus
     summary: str | None
+    is_context_file: bool = False
     created_at: str
 
     class Config:

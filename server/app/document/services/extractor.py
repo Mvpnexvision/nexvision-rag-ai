@@ -35,7 +35,7 @@ from fastapi import HTTPException
 
 
 # Allowed extensions mapped to their MIME types
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".csv", ".txt"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".csv", ".txt", ".md"}
 
 
 def extract_text_from_bytes(raw_bytes: bytes, filename: str) -> str:
@@ -73,6 +73,8 @@ def extract_text_from_bytes(raw_bytes: bytes, filename: str) -> str:
     elif ext == ".csv":
         return _extract_csv(raw_bytes, filename)
     elif ext == ".txt":
+        return _extract_txt(raw_bytes, filename)
+    elif ext == ".md":
         return _extract_txt(raw_bytes, filename)
     else:
         raise HTTPException(

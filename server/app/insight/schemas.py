@@ -1,0 +1,280 @@
+"""
+app/insight/schemas.py
+======================
+Pydantic schemas for the Insight Module (v4).
+
+This module replaces the v3 reasoning/rag schemas with a cleaner design:
+  - Chat sessions are first-class objects (not stateless per-call)
+  - AI output is a single canonical JSON shape (AIOutputJSON)
+  - Recommendations are thin tracking rows that JOIN to ai_questions for content
+"""
+
+from pydantic import BaseModel, Field
+from typing import Literal
+
+
+# ── Chat management ───────────────────────────────────────────────────────────
+
+
+class NewChatRequest(BaseModel):
+    """
+    Request body for POST /chat/new.
+    Creates a new persistent chat session for a user within a company.
+    """
+
+    company_id: str = Field(..., description="UUID of the owning company")
+    user_id: str = Field(..., description="UUID of the user creating the chat")
+    title: str = Field(default="New Chat", description="Display title for this chat session")
+
+
+class NewChatResponse(BaseModel):
+    """
+    Response from POST /chat/new.
+    Returns the new chat_id which must be used for all subsequent calls in this session.
+    """
+
+    chat_id: str = Field(..., description="UUID of the newly created chat session")
+    title: str
+    company_id: str
+
+
+class LinkDocumentsRequest(BaseModel):
+    document_ids: list[str] = Field(
+        ...,
+        description="List of document UUIDs to link to the chat.",
+        examples=[["uuid-1", "uuid-2"]],
+    )
+
+
+class ChatMetadataResponse(BaseModel):
+    """
+    Response from GET /chat/{chat_id}.
+    Returns chat session details including the list of attached documents.
+    """
+
+    chat_id: str
+    title: str
+    company_id: str
+    user_id: str
+    document_ids: list[str] = Field(
+        default_factory=list,
+        description="Cached list of document UUIDs attached to this chat",
+    )
+    created_at: str
+    updated_at: str
+
+
+# ── AI Output JSON ─────────────────────────────────────────────────────────────
+
+
+class AIOutputJSON(BaseModel):
+    """
+    The canonical AI output structure.
+
+    This is the ONLY valid shape Gemini must return and the BE must parse.
+    Every field must be present. Fields like recommendation, business_impact,
+    and next_action should be empty strings (not omitted) when data is
+    insufficient — the BE determines has_insight, not the AI.
+
+    See Section 9 of new-changes.md for the full specification.
+    """
+
+    direct_answer: str = Field(
+        ...,
+        description="Concise 1-2 sentence answer to the question.",
+    )
+    evidence_found: list[str] = Field(
+        ...,
+        description="Specific facts found in the document context, each with inline source reference.",
+    )
+    reasoning: str = Field(
+        ...,
+        description="Step-by-step explanation of how the conclusion was reached.",
+    )
+    recommendation: str = Field(
+        ...,
+        description=(
+            "Specific, actionable business recommendation. "
+            "Empty string if data is insufficient to make a recommendation."
+        ),
+    )
+    risk_level: Literal["Low", "Medium", "High", "Critical"] = Field(
+        ...,
+        description="Assessed risk level for the current situation.",
+    )
+    business_impact: str = Field(
+        ...,
+        description=(
+            "What happens to the business if no action is taken. "
+            "Empty string if data is insufficient."
+        ),
+    )
+    next_action: str = Field(
+        ...,
+        description=(
+            "The single most important immediate action with owner and timeline. "
+            "Empty string if data is insufficient."
+        ),
+    )
+    missing_data: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Names of documents or data types that would improve this analysis "
+            "but were not found in the uploaded context."
+        ),
+    )
+    sources: list[str] = Field(
+        ...,
+        description="Citations in 'filename.ext, page N' format for every factual claim.",
+    )
+
+
+# ── AI Chat ────────────────────────────────────────────────────────────────────
+
+
+class AIChatRequest(BaseModel):
+    """
+    Request body for POST /ai/chat.
+
+    Unlike v3, this requires a chat_id (every question belongs to a session).
+    top_k is removed — the server uses its configured default (TOP_K_CHUNKS).
+    """
+
+    chat_id: str = Field(
+        ...,
+        description="UUID of the chat session. Must exist and have documents attached.",
+    )
+    company_id: str = Field(
+        ...,
+        description="UUID of the company — scopes vector search to company documents only.",
+    )
+    user_id: str = Field(
+        ...,
+        description="UUID of the asking user (Supabase Auth UID) — saved to ai_questions.",
+    )
+    question: str = Field(
+        ...,
+        min_length=5,
+        description="The business question to answer using the chat's document context.",
+        examples=["Which trucks are overdue for PMS this month?"],
+    )
+
+
+class AIChatResponse(BaseModel):
+    """
+    Response from POST /ai/chat.
+
+    Always contains the full AI answer. When has_insight=true, also contains
+    recommendation_id pointing to the created recommendations row.
+    The FE should always render answer as a chat message.
+    The FE should render an insight card only when has_insight=true.
+    """
+
+    question_id: str = Field(..., description="UUID of the saved ai_questions record")
+    chat_id: str
+    question: str
+    company_id: str
+    user_id: str
+    answer: AIOutputJSON = Field(
+        ...,
+        description="Full structured AI output. All 9 fields are always present.",
+    )
+    has_insight: bool = Field(
+        ...,
+        description=(
+            "True when the AI had enough context to generate an actionable insight. "
+            "Determined by the BE from the AI output (not set by the AI directly)."
+        ),
+    )
+    recommendation_id: str | None = Field(
+        default=None,
+        description="UUID of the created recommendations row. Only set when has_insight=true.",
+    )
+    chunks_used: int = Field(
+        ...,
+        description="Number of document chunks retrieved from the vector database.",
+    )
+
+
+# ── Question history ───────────────────────────────────────────────────────────
+
+
+class AIQuestionRecord(BaseModel):
+    """
+    A single record from the ai_questions table.
+    Returned by GET /ai/questions.
+    All v4 fields are included (evidence_found, missing_data, business_impact, next_action).
+    """
+
+    id: str
+    chat_id: str
+    company_id: str
+    user_id: str
+    question: str
+    answer: str = Field(..., description="direct_answer from the AI output")
+    evidence_found: list[str] = Field(default_factory=list)
+    reasoning: str
+    recommendation: str
+    risk_level: str
+    business_impact: str
+    next_action: str
+    missing_data: list[str] = Field(default_factory=list)
+    sources_json: list[str] = Field(default_factory=list)
+    has_insight: bool
+    created_at: str
+
+
+class AIQuestionsListResponse(BaseModel):
+    """Response for GET /ai/questions."""
+
+    chat_id: str
+    questions: list[AIQuestionRecord]
+    total: int
+
+
+# ── Recommendations ────────────────────────────────────────────────────────────
+
+
+class RecommendationRecord(BaseModel):
+    """
+    Full recommendation as returned to the FE.
+
+    In v4, the recommendations table is a thin tracking table.
+    All AI-generated content comes from ai_questions via a JOIN.
+    Tracking field (status) come from recommendations.
+
+    This model merges both into one flat response for the frontend.
+    """
+
+    # From recommendations table
+    id: str = Field(..., description="recommendations.id")
+    ai_question_id: str
+    company_id: str
+    status: Literal["New", "In Review", "Accepted", "Rejected", "Completed"]
+    created_at: str
+    updated_at: str
+
+    # From ai_questions JOIN
+    question: str
+    direct_answer: str
+    evidence_found: list[str]
+    reasoning: str
+    recommendation: str
+    risk_level: Literal["Low", "Medium", "High", "Critical"]
+    business_impact: str
+    next_action: str
+    sources: list[str]
+
+
+class RecommendationsListResponse(BaseModel):
+    """Response for GET /recommendations."""
+
+    company_id: str
+    recommendations: list[RecommendationRecord]
+    total: int
+
+
+class RecommendationStatusUpdate(BaseModel):
+    status: Literal["New", "In Review", "Accepted", "Rejected", "Completed"] = Field(
+        description="New workflow status for this recommendation.",
+    )

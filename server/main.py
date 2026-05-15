@@ -30,10 +30,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from app.document.router import router as document_router
-from app.reasoning.router import router as reasoning_router
+from app.insight.router import router as insight_router
 from app.dashboard.router import router as dashboard_router
+from app.superadmin.router import router as superadmin_router
+from app.company.router import router as company_router
 from app.auth.router import router as auth_router
-from app.reports.router import router as reports_router
+
+from app.business_lines.router import router as business_lines_router
+# from app.reports.router import router as reports_router
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -76,17 +80,31 @@ app.add_middleware(
 # Document Module: /documents/upload, /documents/{id}/process, /documents/list, etc.
 app.include_router(document_router, prefix="/documents", tags=["Document Module"])
 
-# Reasoning Module: /ai/chat, /ai/questions, /insights/generate
-app.include_router(reasoning_router, tags=["Reasoning Module"])
+# Insight Module: /insights/chat/new, insights/chat/{chat_id}/documents/link, /insights/chat/{chat_id}/messages, etc.
+app.include_router(insight_router, prefix="/insights", tags=["Insight Module"])
 
 # Dashboard Module: /dashboard/stats
 app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard Module"])
 
+# SuperAdmin Module: /superadmin/dashboard/stats, etc.
+app.include_router(superadmin_router, prefix="/superadmin", tags=["SuperAdmin Dashboard"])
+
+# Company Module: /companies/{id}, /companies/list, etc.
+app.include_router(company_router, prefix="/companies", tags=["Company Management"])
+
 # Auth Module: /auth/me
 app.include_router(auth_router, prefix="/auth", tags=["Auth Module"])
 
+# Add this alongside your other app.include_router() calls
+app.include_router(
+    business_lines_router,
+    prefix="/business-lines",
+    tags=["Business Lines"],
+)
+
+
 # Reports Module: /reports/generate, GET /reports
-app.include_router(reports_router, tags=["Reports Module"])
+# app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
 
 
 # ---------------------------------------------------------------------------

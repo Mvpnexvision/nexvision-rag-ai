@@ -11,7 +11,7 @@ Supabase dual role in NexVision:
     1. PostgreSQL (via supabase.table()) — stores document metadata,
        user records, recommendation history, etc.
     2. pgvector extension (via supabase.rpc()) — stores and searches
-       768-dimensional embedding vectors for the RAG pipeline.
+       1536-dimensional embedding vectors for the RAG pipeline.
 """
 
 from supabase import create_client, Client
