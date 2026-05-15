@@ -28,6 +28,22 @@ export interface DocumentStatusResponse {
   processing_status: string;
 }
 
+export interface DocumentProcessResponse {
+  document_id: string;
+  file_name: string;
+  processing_status: string;
+  total_chunks: number;
+  summary: string | null;
+  error_detail: string | null;
+  message: string;
+}
+
+export interface DocumentDeleteResponse {
+  document_id: string;
+  status: string;
+  message: string;
+}
+
 export interface AIOutput {
   direct_answer: string;
   evidence_found: string[];
@@ -115,11 +131,12 @@ interface UseChatWorkflowApiReturn {
     uploadedBy: string;
     tags?: string[];
   }) => Promise<UploadDocumentResponse>;
+  deleteDocument: (documentId: string) => Promise<DocumentDeleteResponse>;
   linkDocumentsToChat: (params: {
     chatId: string;
     documentIds: string[];
   }) => Promise<LinkDocumentsResponse>;
-  processDocument: (documentId: string) => Promise<unknown>;
+  processDocument: (documentId: string) => Promise<DocumentProcessResponse>;
   getDocumentStatus: (documentId: string) => Promise<DocumentStatusResponse>;
   sendAIChat: (params: {
     chatId: string;
@@ -137,7 +154,7 @@ interface UseChatWorkflowApiReturn {
 }
 
 export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
-  const { loading, error, get, post } = useFetch({ auth: true });
+  const { loading, error, get, post, del } = useFetch({ auth: true });
 
   const createChat = async ({
     companyId,
@@ -179,6 +196,10 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
+  const deleteDocument = async (documentId: string): Promise<DocumentDeleteResponse> => {
+    return del<DocumentDeleteResponse>(`/documents/${documentId}`);
+  };
+
   const linkDocumentsToChat = async ({
     chatId,
     documentIds,
@@ -191,8 +212,10 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
-  const processDocument = async (documentId: string): Promise<unknown> => {
-    return post(`/documents/${documentId}/process`);
+  const processDocument = async (
+    documentId: string,
+  ): Promise<DocumentProcessResponse> => {
+    return post<DocumentProcessResponse>(`/documents/${documentId}/process`);
   };
 
   const getDocumentStatus = async (documentId: string): Promise<DocumentStatusResponse> => {
@@ -247,6 +270,7 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     error,
     createChat,
     uploadDocument,
+    deleteDocument,
     linkDocumentsToChat,
     processDocument,
     getDocumentStatus,

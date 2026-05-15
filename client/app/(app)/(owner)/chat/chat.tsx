@@ -60,6 +60,8 @@ const CHAT_HISTORY = [
     },
 ] as const;
 
+const DOCUMENT_PROCESSING_FAILED_ERROR_NAME = "DocumentProcessingFailedError";
+
 type GroupedChats = {
     [key: string]: ChatListItem[];
 };
@@ -182,6 +184,7 @@ export default function Chat() {
     const {
         createChat,
         uploadDocument,
+        deleteDocument,
         linkDocumentsToChat,
         sendAIChat,
         generateChatTitle,
@@ -516,6 +519,7 @@ export default function Chat() {
         setAttachedFiles([]);
 
         const systemMessageId = pushSystemMessage("Uploading documents...");
+        let aiResponseStarted = false;
 
         try {
             const stagedFiles = await listStagedFiles();
@@ -528,6 +532,21 @@ export default function Chat() {
                     companyId,
                     uploadedBy: user.id,
                 });
+
+                if (uploadResponse.processing_status.toLowerCase() === "failed") {
+                    try {
+                        await deleteDocument(uploadResponse.document_id);
+                    } catch {
+                        // Ignore cleanup failures so the original failure still surfaces.
+                    }
+
+                    const uploadFailure = new Error(
+                        `Document upload failed for ${uploadResponse.file_name}.`,
+                    );
+                    uploadFailure.name = DOCUMENT_PROCESSING_FAILED_ERROR_NAME;
+                    throw uploadFailure;
+                }
+
                 uploadedDocumentIds.push(uploadResponse.document_id);
             }
 
@@ -582,6 +601,7 @@ export default function Chat() {
 
             // ── AI response ───────────────────────────────────────────────
             replaceSystemMessage(systemMessageId, "Generating AI response...");
+            aiResponseStarted = true;
 
             const aiResponse = await sendAIChat({
                 chatId: selectedChatId,
@@ -626,8 +646,24 @@ export default function Chat() {
         } catch (error) {
             removeSystemMessage(systemMessageId);
 
-            // Restore file chips so the user can retry without re-attaching.
-            setAttachedFiles(filesBeforeSend);
+            if (
+                error instanceof Error &&
+                error.name === DOCUMENT_PROCESSING_FAILED_ERROR_NAME
+            ) {
+                try {
+                    await clearStagedFiles();
+                } catch {}
+                setAttachedFiles([]);
+            } else if (aiResponseStarted) {
+                // If AI response generation fails, clear staged files and chips.
+                try {
+                    await clearStagedFiles();
+                } catch {}
+                setAttachedFiles([]);
+            } else {
+                // Restore file chips so the user can retry without re-attaching.
+                setAttachedFiles(filesBeforeSend);
+            }
 
             const message =
                 error instanceof Error
