@@ -9,7 +9,7 @@ interface RiskCard {
 }
 
 interface TopRecommendation {
-    id: number;
+    id: string | number;
     title: string;
     risk: RiskLevel;
 }
@@ -83,7 +83,7 @@ export default function RecommendationsSummary({
                 {riskData.map(({ level, count }) => (
                     <div
                         key={level}
-                        className={`${riskStyles[level].cardBg} rounded-lg p-4 flex flex-col gap-1 flex-1 min-w-[100px]`}
+                        className={`${riskStyles[level].cardBg} rounded-lg p-4 flex flex-col gap-1 flex-1 min-w-25`}
                     >
                         <span className={`text-xs font-medium opacity-80 ${riskStyles[level].cardText} whitespace-nowrap`}>
                             {level} Risk

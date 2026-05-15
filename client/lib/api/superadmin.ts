@@ -5,7 +5,8 @@
  * All functions use the backend URL from environment or fallback to localhost.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export interface Company {
   id: string;

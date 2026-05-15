@@ -368,7 +368,7 @@ export default function Chat() {
 
             if (unsupportedCount > 0) {
                 showToast({
-                    message: "Only PDF, DOCX, XLSX, CSV, and TXT files are supported.",
+                    message: "Only PDF, DOCX, XLSX, CSV, TXT, and MD files are supported.",
                     type: "error",
                 });
             }

@@ -1,20 +1,26 @@
 "use client";
 
-interface Stat {
+export interface Stat {
     icon: string;
     label: string;
     value: string;
     iconColor: string;
 }
 
-const stats: Stat[] = [
+const DEFAULT_STATS: Stat[] = [
     { icon: "fa-solid fa-file-lines", label: "Total Files", value: "142", iconColor: "text-blue-500" },
     { icon: "fa-solid fa-comments", label: "AI Questions", value: "87", iconColor: "text-green-500" },
     { icon: "fa-solid fa-circle-info", label: "AI Insights", value: "1,048", iconColor: "text-yellow-500" },
     { icon: "fa-solid fa-triangle-exclamation", label: "Critical Risk Items", value: "3", iconColor: "text-purple-500" },
 ];
 
-export default function StatsCards() {
+interface StatsCardsProps {
+    stats?: Stat[];
+}
+
+export default function StatsCards({
+    stats = DEFAULT_STATS,
+}: StatsCardsProps) {
     return (
         <div className="flex w-full gap-4 mb-8 overflow-x-auto pb-2 custom-scrollbar">
             {stats.map((stat) => (

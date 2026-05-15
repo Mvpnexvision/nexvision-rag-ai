@@ -10,6 +10,7 @@ export const SUPPORTED_FILE_EXTENSIONS = [
   "xlsx",
   "csv",
   "txt",
+  "md",
 ] as const;
 
 export type SupportedFileExtension = (typeof SUPPORTED_FILE_EXTENSIONS)[number];
@@ -32,11 +33,11 @@ function ensureClientSide() {
   }
 }
 
-function useMemoryStore() {
+function setMemoryStoreMode() {
   storageMode = "memory";
 }
 
-function useIndexedDbStore() {
+function setIndexedDbStoreMode() {
   if (storageMode === "auto") {
     storageMode = "indexeddb";
   }
@@ -132,10 +133,10 @@ export async function listStagedFiles(): Promise<StagedFileRecord[]> {
       });
     });
 
-    useIndexedDbStore();
+    setIndexedDbStoreMode();
     return rows;
   } catch {
-    useMemoryStore();
+    setMemoryStoreMode();
     return Array.from(memoryStore.values());
   }
 }
@@ -164,10 +165,10 @@ export async function saveStagedFiles(files: File[]): Promise<StagedFileRecord[]
       return records;
     });
 
-    useIndexedDbStore();
+    setIndexedDbStoreMode();
     return records;
   } catch {
-    useMemoryStore();
+    setMemoryStoreMode();
     records.forEach((record) => memoryStore.set(record.id, record));
     return records;
   }
@@ -187,9 +188,9 @@ export async function removeStagedFile(id: string): Promise<void> {
         request.onsuccess = () => resolve();
       });
     });
-    useIndexedDbStore();
+    setIndexedDbStoreMode();
   } catch {
-    useMemoryStore();
+    setMemoryStoreMode();
     memoryStore.delete(id);
   }
 }
@@ -208,9 +209,9 @@ export async function clearStagedFiles(): Promise<void> {
         request.onsuccess = () => resolve();
       });
     });
-    useIndexedDbStore();
+    setIndexedDbStoreMode();
   } catch {
-    useMemoryStore();
+    setMemoryStoreMode();
     memoryStore.clear();
   }
 }
