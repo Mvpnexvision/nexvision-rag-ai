@@ -13,6 +13,7 @@ import {
     ChatListResponse,
     AIQuestionRecord,
     AIQuestionsListResponse,
+    GenerateChatTitleResponse,
     useChatWorkflowApi,
 } from "@/hooks/useChatWorkflowApi";
 import {
@@ -183,6 +184,7 @@ export default function Chat() {
         uploadDocument,
         linkDocumentsToChat,
         sendAIChat,
+        generateChatTitle,
         listChats,
         getChatMessages,
     } = useChatWorkflowApi();
@@ -196,6 +198,65 @@ export default function Chat() {
         (typeof session?.user?.user_metadata?.company_id === "string"
             ? session.user.user_metadata.company_id
             : undefined);
+
+    const handleCreateNewChat = async () => {
+        if (authLoading) {
+            showToast({
+                message: "Initializing session. Please try again in a moment.",
+                type: "info",
+            });
+            return;
+        }
+
+        if (!user?.id) {
+            showToast({
+                message: "No active user session found. Please sign in again.",
+                type: "error",
+            });
+            return;
+        }
+
+        if (!companyId) {
+            showToast({
+                message: "Your account has no company profile yet. Please contact admin or sign in again.",
+                type: "error",
+            });
+            return;
+        }
+
+        setIsCreatingChat(true);
+
+        try {
+            const createdChat: CreateChatResponse = await createChat({
+                companyId,
+                userId: user.id,
+                title: "New Chat",
+            });
+
+            setChats((prev) => [
+                {
+                    chat_id: createdChat.chat_id,
+                    title: createdChat.title,
+                    company_id: createdChat.company_id,
+                    user_id: user.id,
+                    document_ids: [],
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                },
+                ...prev,
+            ]);
+            setSelectedChatId(createdChat.chat_id);
+            setMessages([]);
+            setAttachedFiles([]);
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "Failed to create a new chat.";
+
+            showToast({ message, type: "error" });
+        } finally {
+            setIsCreatingChat(false);
+        }
+    };
 
     // ── Abort any active polling when the component unmounts ──────────────
     useEffect(() => {
@@ -250,27 +311,7 @@ export default function Chat() {
                 }
 
                 // Otherwise create a new chat
-                setIsCreatingChat(true);
-                const createdChat: CreateChatResponse = await createChat({
-                    companyId,
-                    userId: user.id,
-                    title: "New Chat",
-                });
-
-                setSelectedChatId(createdChat.chat_id);
-                // Append the newly created chat to the list
-                setChats((prev) => [
-                    {
-                        chat_id: createdChat.chat_id,
-                        title: createdChat.title,
-                        company_id: createdChat.company_id,
-                        user_id: user.id,
-                        document_ids: [],
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                    },
-                    ...prev,
-                ]);
+                await handleCreateNewChat();
             } catch (error) {
                 console.error("Failed to initialize chat:", error);
                 setChats([]);
@@ -460,6 +501,7 @@ export default function Chat() {
         }
 
         setIsSubmitting(true);
+        const shouldGenerateTitle = messages.length === 0;
 
         const userMessage: Message = {
             id: `${Date.now()}-user`,
@@ -550,6 +592,27 @@ export default function Chat() {
 
             removeSystemMessage(systemMessageId);
 
+            if (shouldGenerateTitle) {
+                try {
+                    const generatedTitle: GenerateChatTitleResponse =
+                        await generateChatTitle(aiResponse.chat_id);
+
+                    setChats((prev) =>
+                        prev.map((chat) =>
+                            chat.chat_id === generatedTitle.chat_id
+                                ? {
+                                      ...chat,
+                                      title: generatedTitle.title,
+                                      updated_at: new Date().toISOString(),
+                                  }
+                                : chat,
+                        ),
+                    );
+                } catch (titleError) {
+                    console.error("Failed to generate chat title:", titleError);
+                }
+            }
+
             setMessages((prev) => [
                 ...prev,
                 {
@@ -586,6 +649,16 @@ export default function Chat() {
             <div className="w-64 bg-neutral-50 border-r border-gray-200 flex flex-col h-full shrink-0">
                 <div className="p-4 font-semibold text-sm border-b border-gray-200 flex items-center justify-between">
                     <span>Chat History</span>
+                    <button
+                        type="button"
+                        onClick={() => void handleCreateNewChat()}
+                        disabled={isCreatingChat}
+                        className="rounded-md border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Create new chat"
+                        title="Create new chat"
+                    >
+                        <i className="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-4">
                     {loadingChats ? (

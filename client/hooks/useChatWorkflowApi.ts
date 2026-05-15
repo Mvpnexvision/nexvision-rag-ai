@@ -52,6 +52,11 @@ export interface AIChatResponse {
   chunks_used: number;
 }
 
+export interface GenerateChatTitleResponse {
+  chat_id: string;
+  title: string;
+}
+
 export interface ChatListItem {
   chat_id: string;
   title: string;
@@ -122,6 +127,7 @@ interface UseChatWorkflowApiReturn {
     userId: string;
     question: string;
   }) => Promise<AIChatResponse>;
+  generateChatTitle: (chatId: string) => Promise<GenerateChatTitleResponse>;
   listChats: (params: {
     companyId: string;
     limit?: number;
@@ -212,6 +218,12 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
+  const generateChatTitle = async (
+    chatId: string,
+  ): Promise<GenerateChatTitleResponse> => {
+    return post<GenerateChatTitleResponse>(`/insights/chat/${chatId}/generate-title`);
+  };
+
   const listChats = async ({
     companyId,
     limit = 20,
@@ -239,6 +251,7 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     processDocument,
     getDocumentStatus,
     sendAIChat,
+    generateChatTitle,
     listChats,
     getChatMessages,
   };
