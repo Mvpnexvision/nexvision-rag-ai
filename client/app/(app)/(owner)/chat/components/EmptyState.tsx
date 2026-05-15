@@ -2,14 +2,20 @@
 
 import { useRef } from "react";
 
-export default function EmptyState() {
+interface EmptyStateProps {
+    onFilesSelected: (files: File[]) => void;
+}
+
+export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Handle file selection logic here
-        if (e.target.files) {
-            console.log("Selected files:", e.target.files);
+        if (!e.target.files || e.target.files.length === 0) {
+            return;
         }
+
+        onFilesSelected(Array.from(e.target.files));
+        e.target.value = "";
     };
 
     return (
@@ -40,7 +46,7 @@ export default function EmptyState() {
                         Click to upload <span className="font-normal text-gray-500">or drag and drop</span>
                     </p>
                     <p className="text-xs text-gray-500">
-                        Supports PDF, DOCX, XLSX, TXT, and CSV (max. 50MB)
+                        Supports PDF, DOCX, XLSX, TXT, CSV, and MD (max. 20MB)
                     </p>
                 </div>
 
@@ -50,7 +56,7 @@ export default function EmptyState() {
                     className="hidden"
                     aria-label="Upload documents"
                     title="Upload documents"
-                    accept=".pdf,.docx,.xlsx,.txt,.csv"
+                    accept=".pdf,.docx,.xlsx,.txt,.csv,.md"
                     multiple
                     onChange={handleFileChange}
                 />
@@ -58,3 +64,14 @@ export default function EmptyState() {
         </div>
     );
 }
+
+
+
+
+
+
+
+
+
+
+

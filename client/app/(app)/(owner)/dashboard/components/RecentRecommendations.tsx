@@ -3,7 +3,7 @@ import Link from "next/link";
 
 // Added Risk level type
 interface Recommendation {
-    id: number;
+    id: string | number;
     prompt: string;
     subtitle: string;
     risk: "Low" | "Medium" | "High" | "Critical";
@@ -33,13 +33,7 @@ export default function RecentRecommendations({
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-medium text-black">AI Insights</h2>
-                <Link
-                    href="/recommendations"
-                    className="text-xs text-black hover:underline transition-colors"
-                >
-                    View All
-                </Link>
+                <h2 className="text-lg font-medium text-black">Recent AI Insights</h2>
             </div>
             <ul className="flex flex-col gap-3">
                 {items.map((item) => (

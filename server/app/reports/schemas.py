@@ -1,10 +1,16 @@
 """
 app/reports/schemas.py
 =======================
-Request and response schemas for the Reports Module.
+Request and response schemas for the Reports Module (v4).
 
-Aligned to `reports` table spec:
-    company_id, report_type, title, content, generated_by, created_at
+Aligned with the v4 insight module architecture:
+    - Uses AIOutputJSON as the base AI output shape
+    - Company-scoped via current_user from JWT
+    - Saved to `reports` table: company_id, report_type, title, content, generated_by, created_at
+
+Report types mirror the business lines from the spec:
+    management_summary, hr_compliance, sales_performance,
+    logistics, pms, risk
 """
 
 from pydantic import BaseModel, Field
@@ -15,7 +21,7 @@ from enum import Enum
 class ReportType(str, Enum):
     """
     Supported report types.
-    Each type triggers a different AI analysis and summary style.
+    Each type triggers a different AI analysis prompt and summary style.
     """
     management_summary = "management_summary"
     hr_compliance = "hr_compliance"
@@ -24,6 +30,48 @@ class ReportType(str, Enum):
     pms = "pms"
     risk = "risk"
 
+
+# ---------------------------------------------------------------------------
+# Report content — the structured AI output for reports
+# ---------------------------------------------------------------------------
+
+class ReportContent(BaseModel):
+    """
+    Structured content of a generated report.
+
+    Aligned with AIOutputJSON fields from the v4 insight module,
+    but shaped for a report format rather than a chat answer.
+    """
+
+    summary: str = Field(
+        ...,
+        description="Executive summary of the report findings in 2-3 sentences.",
+    )
+    key_findings: list[str] = Field(
+        ...,
+        description="List of key findings from the company documents, each with source citation.",
+    )
+    risks: list[str] = Field(
+        default_factory=list,
+        description="Identified risks from the documents with risk level noted.",
+    )
+    recommendations: list[str] = Field(
+        ...,
+        description="List of recommended actions with owner and timeline.",
+    )
+    missing_data: list[str] = Field(
+        default_factory=list,
+        description="Data that would improve this report but was not found in documents.",
+    )
+    sources: list[str] = Field(
+        ...,
+        description="Source citations: 'filename.ext, page N' for every finding.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Request
+# ---------------------------------------------------------------------------
 
 class ReportGenerateRequest(BaseModel):
     """
@@ -34,10 +82,6 @@ class ReportGenerateRequest(BaseModel):
     company_id: str = Field(
         ...,
         description="UUID of the company to generate the report for.",
-    )
-    user_id: str = Field(
-        ...,
-        description="UUID of the user requesting the report.",
     )
     report_type: ReportType = Field(
         ...,
@@ -54,7 +98,14 @@ class ReportGenerateRequest(BaseModel):
     )
     title: str = Field(
         default="",
-        description="Optional custom title for the report. Auto-generated if left empty.",
+        description="Optional custom title. Auto-generated from report_type if left empty.",
+    )
+    chat_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional: scope the report to documents attached to a specific chat session. "
+            "If not provided, uses all AI-ready documents for the company."
+        ),
     )
     top_k: int = Field(
         default=10,
@@ -64,36 +115,27 @@ class ReportGenerateRequest(BaseModel):
     )
 
 
-class ReportContent(BaseModel):
-    """
-    The structured content of a generated report.
-    """
+# ---------------------------------------------------------------------------
+# Responses
+# ---------------------------------------------------------------------------
 
-    summary: str = Field(
-        ...,
-        description="Executive summary of the report findings.",
-    )
-    key_findings: list[str] = Field(
-        ...,
-        description="List of key findings from the company documents.",
-    )
-    risks: list[str] = Field(
-        default_factory=list,
-        description="Identified risks from the documents.",
-    )
-    recommendations: list[str] = Field(
-        ...,
-        description="List of recommended actions based on findings.",
-    )
-    sources: list[str] = Field(
-        ...,
-        description="Source documents used to generate this report.",
-    )
+class ReportGenerateResponse(BaseModel):
+    """Response from POST /reports/generate."""
+
+    report_id: str = Field(..., description="UUID of the saved report record.")
+    company_id: str
+    report_type: str
+    title: str
+    content: ReportContent
+    generated_by: str = Field(..., description="UUID of the user who generated the report.")
+    chunks_used: int
+    message: str
 
 
 class ReportRecord(BaseModel):
     """
     A single saved report record from the `reports` table.
+    Returned by GET /reports.
     """
 
     id: str
@@ -105,25 +147,8 @@ class ReportRecord(BaseModel):
     created_at: str
 
 
-class ReportGenerateResponse(BaseModel):
-    """
-    Response from POST /reports/generate.
-    """
-
-    report_id: str = Field(..., description="UUID of the saved report record.")
-    company_id: str
-    report_type: str
-    title: str
-    content: ReportContent
-    generated_by: str
-    message: str
-
-
 class ReportListResponse(BaseModel):
-    """
-    Response from GET /reports.
-    Returns all saved reports for a company.
-    """
+    """Response from GET /reports."""
 
     company_id: str
     reports: list[ReportRecord]

@@ -111,7 +111,7 @@ app.include_router(
 )
 
 # Reports Module: /reports/generate, GET /reports
-# app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
+app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
 
 
 # ---------------------------------------------------------------------------
