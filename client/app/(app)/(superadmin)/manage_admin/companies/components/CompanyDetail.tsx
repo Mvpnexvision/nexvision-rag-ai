@@ -131,9 +131,6 @@ export default function CompanyDetail({
             <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-semibold text-gray-900">Users</h4>
-                <button className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                  Add User
-                </button>
               </div>
               <div className="divide-y divide-gray-200">
                 {mockUsers.map((user) => (

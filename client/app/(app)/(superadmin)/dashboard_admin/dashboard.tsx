@@ -506,9 +506,6 @@ export default function Dashboard() {
             <h3 className="text-sm font-bold text-gray-900">
               Recommendations Summary
             </h3>
-            <button className="text-xs text-blue-500 hover:underline font-medium">
-              View All
-            </button>
           </div>
 
           <div className="grid grid-cols-4 gap-2 mb-4">
@@ -547,20 +544,12 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-
-          <button className="mt-3.5 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            View All Recommendations{" "}
-            <i className="fa-solid fa-chevron-right text-[9px]" />
-          </button>
         </div>
 
         {/* AI Insights */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900">AI Insights</h3>
-            <button className="text-xs text-blue-500 hover:underline font-medium">
-              View All
-            </button>
           </div>
 
           <div>
@@ -603,11 +592,6 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-
-          <button className="mt-3 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            View All Insights{" "}
-            <i className="fa-solid fa-chevron-right text-[9px]" />
-          </button>
         </div>
       </div>
 
@@ -617,9 +601,6 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900">Latest Uploads</h3>
-            <button className="text-xs text-blue-500 hover:underline font-medium">
-              View All
-            </button>
           </div>
 
           <div className="overflow-x-auto rounded-xl">
@@ -679,11 +660,6 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
-
-          <button className="mt-3.5 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            View All Uploads{" "}
-            <i className="fa-solid fa-chevron-right text-[9px]" />
-          </button>
         </div>
 
         {/* Most Searched Topics */}
@@ -692,9 +668,6 @@ export default function Dashboard() {
             <h3 className="text-sm font-bold text-gray-900">
               Most Searched Topics
             </h3>
-            <button className="text-xs text-blue-500 hover:underline font-medium">
-              View All
-            </button>
           </div>
 
           <div className="space-y-4">
@@ -724,11 +697,6 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-
-          <button className="mt-5 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            View All Topics{" "}
-            <i className="fa-solid fa-chevron-right text-[9px]" />
-          </button>
         </div>
       </div>
     </div>
