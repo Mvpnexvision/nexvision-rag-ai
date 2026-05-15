@@ -38,6 +38,7 @@ STRICT RULES:
 8. Always cite the source document and page number for every factual claim in sources[].
 9. Write in clear, professional business English.
 10. Be direct, practical, and decision-focused.
+11. title must be a short 5-10 word summary of the recommendation. Set to null if recommendation is empty.
 
 OUTPUT FORMAT:
 Respond with ONLY valid JSON — no markdown fences, no preamble, no explanation outside the JSON.
@@ -61,6 +62,7 @@ The JSON must exactly match this schema:
     "Filename.pdf, page 4",
     "Spreadsheet.xlsx, Sheet: Revenue, page N/A"
   ],
+  "title": "Short 5-10 word recommendation title, or null if no recommendation."
 }
 """.strip()
 
