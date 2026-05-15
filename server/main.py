@@ -38,7 +38,6 @@ from app.auth.router import router as auth_router
 from app.users.router import router as users_router
 
 from app.business_lines.router import router as business_lines_router
-# from app.reports.router import router as reports_router
 
 # ---------------------------------------------------------------------------
 # App initialisation
@@ -110,8 +109,6 @@ app.include_router(
     tags=["Users"],
 )
 
-# Reports Module: /reports/generate, GET /reports
-app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
 
 
 # ---------------------------------------------------------------------------
