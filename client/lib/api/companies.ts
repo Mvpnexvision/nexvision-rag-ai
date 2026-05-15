@@ -61,7 +61,7 @@ export async function createCompany(
   const response = await fetch(`${API_BASE_URL}/companies`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ company_name: name, business_line: businessLine }),
+   body: JSON.stringify({ name: name, business_line: businessLine }),
   });
 
   if (!response.ok)
@@ -90,7 +90,7 @@ export async function updateCompany(
   },
 ): Promise<Company> {
   const body: any = {};
-  if (updates.name) body.company_name = updates.name;
+  if (updates.name) body.name = updates.name;  
   if (updates.businessLine) body.business_line = updates.businessLine;
   if (updates.status) body.status = updates.status;
 

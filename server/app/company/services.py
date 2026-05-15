@@ -141,7 +141,7 @@ async def create_company(name: str, business_line: str):
 
     result = sb.table("companies").insert({
         "company_name": name,
-        "business_line": business_line,
+       "business_line": business_line.lower(),
     }).execute()
 
     if not result.data:

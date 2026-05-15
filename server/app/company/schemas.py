@@ -2,11 +2,11 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
-class CompanyCreate(BaseModel):
-    """Request body for creating a company"""
-    name: str = Field(..., alias="company_name")
-    business_line: str = Field(..., description="Business line category")
 
+class CompanyUpdate(BaseModel):
+    name: Optional[str] = None
+    business_line: Optional[str] = None
+    status: Optional[str] = None
 
 class CompanyUpdate(BaseModel):
     """Request body for updating a company"""
