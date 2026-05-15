@@ -19,7 +19,6 @@ export default function Dashboard() {
                 <RecommendationsSummary />
 
                 <div className="flex flex-col gap-6 min-w-0">
-                    <RecentRecommendations />
                     <ContextSources />
                 </div>
             </div>

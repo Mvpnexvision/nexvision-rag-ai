@@ -121,7 +121,7 @@ export default function RecommendationsPage() {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-medium text-black">Recommendations</h2>
+          <h2 className="text-2xl font-medium text-black">AI Insights</h2>
           <p className="text-gray-600 text-sm">Review recommended actions to improve your platform.</p>
         </div>
 
@@ -156,7 +156,7 @@ export default function RecommendationsPage() {
             {/* Recommendation List */}
             <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 overflow-hidden">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Recommendation List</h3>
+                <h3 className="text-lg font-semibold text-gray-900">AI Insights List</h3>
                 <span className="text-xs text-gray-500">{filtered.length} items</span>
               </div>
 

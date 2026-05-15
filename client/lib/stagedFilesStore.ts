@@ -1,4 +1,4 @@
-export const MAX_CHAT_FILES = 5;
+export const MAX_CHAT_FILES = 10;
 
 const DB_NAME = "nexvision-chat-files";
 const DB_VERSION = 1;
