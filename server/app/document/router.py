@@ -109,9 +109,19 @@ async def upload_document(
     # Read file bytes once — we need them for both storage and extraction
     raw_bytes = await file.read()
 
+    # ── Enforce MAX_UPLOAD_MB limit ──────────────────────────────────────────
+    max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
+    if len(raw_bytes) > max_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"'{filename}' exceeds the maximum upload size of {settings.MAX_UPLOAD_MB}MB. "
+                f"File size: {len(raw_bytes) / (1024 * 1024):.2f}MB. "
+                "Please reduce the file size and try again."
+            ),
+        )
+
     # ── Save to Supabase Storage ─────────────────────────────────────────────
-    # Reconstruct an in-memory UploadFile-like object for the storage service
-    # (the storage service needs to call file.read(), so we pass a fresh stream)
     file.file = io.BytesIO(raw_bytes)
 
     storage_path = await upload_file_to_storage(
