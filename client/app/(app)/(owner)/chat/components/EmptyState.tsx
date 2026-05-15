@@ -46,7 +46,7 @@ export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
                         Click to upload <span className="font-normal text-gray-500">or drag and drop</span>
                     </p>
                     <p className="text-xs text-gray-500">
-                        Supports PDF, DOCX, XLSX, TXT, and CSV (max. 20MB)
+                        Supports PDF, DOCX, XLSX, TXT, CSV, and MD (max. 20MB)
                     </p>
                 </div>
 
@@ -56,7 +56,7 @@ export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
                     className="hidden"
                     aria-label="Upload documents"
                     title="Upload documents"
-                    accept=".pdf,.docx,.xlsx,.txt,.csv"
+                    accept=".pdf,.docx,.xlsx,.txt,.csv,.md"
                     multiple
                     onChange={handleFileChange}
                 />

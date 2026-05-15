@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import isYesterday from "dayjs/plugin/isYesterday";
@@ -8,6 +8,8 @@ import isYesterday from "dayjs/plugin/isYesterday";
 import DocumentToolbar from './components/DocumentToolbar';
 import GroupedDocumentView from './components/GroupedDocumentView';
 import FilterModal from './components/FilterModal';
+import { useFetch } from "@/hooks/useFetch";
+import { useAuth } from "@/contexts/authContext";
 
 // Extend dayjs plugins
 dayjs.extend(isToday);
@@ -23,26 +25,83 @@ export interface DocumentItem {
     type: string;
 }
 
+interface DocumentPageItem {
+    id: string;
+    file_name: string;
+    file_type: string;
+    processing_status: string;
+    created_at: string;
+}
+
+interface DocumentsPageListResponse {
+    total: number;
+    documents: DocumentPageItem[];
+}
+
+const getFileIcon = (fileType: string): string => {
+    const type = fileType.toUpperCase();
+    switch (type) {
+        case "PDF":
+            return "fa-file-pdf";
+        case "DOCX":
+        case "DOC":
+            return "fa-file-word";
+        case "XLSX":
+        case "XLS":
+            return "fa-file-excel";
+        case "CSV":
+            return "fa-file-csv";
+        case "TXT":
+        case "MD":
+            return "fa-file-text";
+        default:
+            return "fa-file";
+    }
+};
+
 export default function Documents() {
     const [viewMode, setViewMode] = useState<ViewMode>("grid");
     const [showModal, setShowModal] = useState(false);
+    const [documents, setDocuments] = useState<DocumentItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { profile } = useAuth();
+    const { get } = useFetch();
 
-    // Mock data using dynamic dates to demonstrate the Today/Yesterday grouping
-    const docs: DocumentItem[] = [
-        { id: "1", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
-        { id: "2", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
-        { id: "3", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
-        { id: "4", icon: "fa-file-pdf", name: "Q3_Financial_Report.pdf", date: dayjs().toISOString(), type: "PDF" },
-        { id: "5", icon: "fa-file-word", name: "Project_Requirements_v2.docx", date: dayjs().subtract(1, "day").toISOString(), type: "DOCX" },
-        { id: "6", icon: "fa-file-csv", name: "User_Feedback_Q1-Q2.csv", date: dayjs().subtract(3, "day").toISOString(), type: "CSV" },
-        { id: "7", icon: "fa-file-pdf", name: "Employee_Handbook_2023.pdf", date: dayjs().subtract(45, "day").toISOString(), type: "PDF" },
-        { id: "8", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
-        { id: "9", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
-        { id: "10", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
-        { id: "11", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
-        { id: "12", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
-        { id: "13", icon: "fa-file-word", name: "Marketing_Strategy_Q4.docx", date: dayjs().subtract(60, "day").toISOString(), type: "DOCX" },
-    ];
+    useEffect(() => {
+        const fetchDocuments = async () => {
+            if (!profile?.company_id) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const response = await get<DocumentsPageListResponse>(
+                    `/documents/page/list?company_id=${profile.company_id}&limit=100&offset=0`
+                );
+
+                // Transform API response to DocumentItem format
+                const transformedDocs: DocumentItem[] = response.documents.map((doc) => ({
+                    id: doc.id,
+                    icon: getFileIcon(doc.file_type),
+                    name: doc.file_name,
+                    date: doc.created_at,
+                    type: doc.file_type,
+                }));
+
+                setDocuments(transformedDocs);
+            } catch (error) {
+                console.error("Failed to fetch documents:", error);
+                setDocuments([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDocuments();
+    }, [profile?.company_id, get]);
+
+    const docs = documents;
 
     // Grouping logic
     const groupedDocs = useMemo(() => {

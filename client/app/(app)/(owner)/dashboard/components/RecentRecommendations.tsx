@@ -3,7 +3,7 @@ import Link from "next/link";
 
 // Added Risk level type
 interface Recommendation {
-    id: number;
+    id: string | number;
     prompt: string;
     subtitle: string;
     risk: "Low" | "Medium" | "High" | "Critical";
