@@ -229,6 +229,10 @@ class ChatListResponse(BaseModel):
     limit: int
     offset: int
 
+class GenerateChatTitleResponse(BaseModel):
+    chat_id: str
+    title: str = Field(..., description="AI-generated chat title based on the first question and answer.")
+
 
 # ── Question history ───────────────────────────────────────────────────────────
 

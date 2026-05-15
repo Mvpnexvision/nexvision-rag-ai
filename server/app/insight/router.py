@@ -35,6 +35,7 @@ from core.logger import debug_log
 from app.insight.schemas import (
     ChatListItem,
     ChatListResponse,
+    GenerateChatTitleResponse,
     LinkDocumentsRequest,
     LinkDocumentsResponse,
     NewChatRequest,
@@ -49,6 +50,7 @@ from app.insight.schemas import (
     RecommendationStatusUpdate,
 )
 from app.insight.services.pipeline import run_chat_pipeline
+from app.insight.services.generator import generate_title_from_gemini
 
 router = APIRouter()
 
@@ -404,6 +406,89 @@ async def list_chats(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+# ── POST /chat/{chat_id}/generate-title ───────────────────────────────────────
+
+@router.post(
+    "/chat/{chat_id}/generate-title",
+    response_model=GenerateChatTitleResponse,
+    summary="Generate a chat title from the first message",
+    description=(
+        "Generates a short AI chat title based on the first question and answer in the chat.\n\n"
+        "Only works when the chat has exactly one message — returns 400 if the chat "
+        "has no messages or more than one message.\n\n"
+        "The FE should call this immediately after the first AI response is received."
+    ),
+)
+async def generate_chat_title(
+    chat_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    sb = get_supabase_client()
+
+    # Verify chat exists
+    chat = (
+        sb.table("ai_chats")
+        .select("id, user_id, title")
+        .eq("id", chat_id)
+        .limit(1)
+        .execute()
+    )
+    if not chat.data:
+        raise HTTPException(status_code=404, detail=f"Chat '{chat_id}' not found.")
+
+    if chat.data[0]["user_id"] != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not have permission to update this chat.")
+
+    # Fetch messages in this chat
+    messages = (
+        sb.table("ai_questions")
+        .select("id, question, answer")
+        .eq("chat_id", chat_id)
+        .order("created_at", desc=False)
+        .execute()
+    )
+    message_count = len(messages.data) if messages.data else 0
+
+    # Validate — only generate title on first message
+    if message_count == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Chat has no messages yet. Send a message first before generating a title.",
+        )
+    if message_count > 1:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Chat already has {message_count} messages. "
+                "Title generation is only allowed after the first message."
+            ),
+        )
+
+    # Use the first question and answer as context for the title
+    first_message = messages.data[0]
+    question = first_message.get("question", "")
+    answer = first_message.get("answer", "")
+
+    # Call generator service to produce the title
+    generated_title = await generate_title_from_gemini(question=question, answer=answer)
+
+    # Persist the generated title to ai_chats
+    try:
+        sb.table("ai_chats").update({
+            "title": generated_title,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", chat_id).execute()
+    except Exception as exc:
+        debug_log("REASONING", f"Failed to save generated title for chat {chat_id}: {exc}")
+        raise HTTPException(status_code=500, detail=f"Title generated but failed to save: {exc}")
+
+    debug_log("REASONING", f"Generated title for chat {chat_id}: '{generated_title}'")
+
+    return GenerateChatTitleResponse(
+        chat_id=chat_id,
+        title=generated_title,
     )
 
 
