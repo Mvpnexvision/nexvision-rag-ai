@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CompanyEditModal from "./CompanyEditModal";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8000";
 
 interface Company {
   id: string;
@@ -12,31 +17,37 @@ interface Company {
   admin: string;
 }
 
+interface CompanyUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
+interface AIActivity {
+  id: string;
+  question: string;
+  created_at: string | null;
+}
+
 interface CompanyDetailProps {
   company: Company;
   onClose: () => void;
   onUpdateCompany: (company: Company) => void;
 }
 
-const mockUsers = [
-  { id: "1", name: "John Smith", email: "john@company.com" },
-  { id: "2", name: "Jane Doe", email: "jane@company.com" },
-  { id: "3", name: "Mike Johnson", email: "mike@company.com" },
-];
-
-const mockDocuments = [
-  { id: "1", name: "System_Configuration.pdf", date: "Today" },
-  { id: "2", name: "Security_Audit.pdf", date: "Yesterday" },
-];
-
-const mockActivity = [
-  {
-    id: "1",
-    question: "What are the security vulnerabilities?",
-    date: "Today",
-  },
-  { id: "2", question: "Optimize database performance", date: "Yesterday" },
-];
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "Unknown";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return date.toLocaleDateString();
+}
 
 export default function CompanyDetail({
   company,
@@ -45,6 +56,48 @@ export default function CompanyDetail({
 }: CompanyDetailProps) {
   const [companyState, setCompanyState] = useState(company);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  const [users, setUsers] = useState<CompanyUser[]>([]);
+  const [activity, setActivity] = useState<AIActivity[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const res = await fetch(
+          `${API_BASE_URL}/companies/${company.id}/users`,
+        );
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const data = await res.json();
+        setUsers(data.users ?? []);
+      } catch (err) {
+        console.error("Failed to load company users:", err);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    const fetchActivity = async () => {
+      try {
+        setLoadingActivity(true);
+        const res = await fetch(
+          `${API_BASE_URL}/companies/${company.id}/ai-activity?limit=5`,
+        );
+        if (!res.ok) throw new Error("Failed to fetch AI activity");
+        const data = await res.json();
+        setActivity(data.activity ?? []);
+      } catch (err) {
+        console.error("Failed to load AI activity:", err);
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    fetchUsers();
+    fetchActivity();
+  }, [company.id]);
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 overflow-y-auto py-4">
@@ -57,16 +110,6 @@ export default function CompanyDetail({
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-gray-600">
               <span>{companyState.businessLine}</span>
               <span>{companyState.admin}</span>
-              {/* Status hidden - requires admin user assignment */}
-              {/* <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                  companyState.status === "Active"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-gray-100 text-gray-700"
-                }`}
-              >
-                {companyState.status}
-              </span> */}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -86,6 +129,7 @@ export default function CompanyDetail({
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Company Overview */}
           <div className="rounded-3xl border border-gray-200 bg-gray-50 p-6">
             <h3 className="text-lg font-semibold text-gray-900">
               Company overview
@@ -115,19 +159,11 @@ export default function CompanyDetail({
                   {companyState.admin}
                 </p>
               </div>
-              {/* Status field hidden - requires admin user assignment */}
-              {/* <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
-                  Status
-                </p>
-                <p className="mt-2 text-sm text-gray-900">
-                  {companyState.status}
-                </p>
-              </div> */}
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Users */}
             <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-semibold text-gray-900">Users</h4>
@@ -135,40 +171,63 @@ export default function CompanyDetail({
                   Add User
                 </button>
               </div>
-              <div className="divide-y divide-gray-200">
-                {mockUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between py-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.name}
-                      </p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                    </div>
-                    <button className="text-gray-400 hover:text-gray-600">
-                      <i className="fa-solid fa-ellipsis-v"></i>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 space-y-4">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900">
-                  Recent AI Activity
-                </h4>
-                <div className="mt-3 divide-y divide-gray-200">
-                  {mockActivity.map((item) => (
-                    <div key={item.id} className="py-3">
-                      <p className="text-sm text-gray-900">{item.question}</p>
-                      <p className="text-xs text-gray-500 mt-1">{item.date}</p>
+              {loadingUsers ? (
+                <p className="text-xs text-gray-400 py-4 text-center">
+                  Loading users...
+                </p>
+              ) : users.length === 0 ? (
+                <p className="text-xs text-gray-400 py-4 text-center">
+                  No users found
+                </p>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between py-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                      <button className="text-gray-400 hover:text-gray-600">
+                        <i className="fa-solid fa-ellipsis-v"></i>
+                      </button>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
+            </div>
+
+            {/* Recent AI Activity */}
+            <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+              <h4 className="text-sm font-semibold text-gray-900">
+                Recent AI Activity
+              </h4>
+
+              {loadingActivity ? (
+                <p className="text-xs text-gray-400 py-4 text-center">
+                  Loading activity...
+                </p>
+              ) : activity.length === 0 ? (
+                <p className="text-xs text-gray-400 py-4 text-center">
+                  No AI activity yet
+                </p>
+              ) : (
+                <div className="mt-3 divide-y divide-gray-200">
+                  {activity.map((item) => (
+                    <div key={item.id} className="py-3">
+                      <p className="text-sm text-gray-900">{item.question}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatDate(item.created_at)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@ const API_BASE_URL =
 export interface Company {
   id: string;
   name: string;
+  business_line: string;
 }
 
 export interface DashboardStats {
