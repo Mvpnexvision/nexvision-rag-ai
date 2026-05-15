@@ -25,6 +25,7 @@ It can hold any extraction metadata: page, sheet name, row range, etc.
 This makes the schema forward-compatible with new file formats.
 """
 
+from datetime import datetime, timezone
 import json
 from core.supabase_client import get_supabase_client
 from core.config import settings
@@ -276,3 +277,64 @@ async def get_document_by_id(document_id: str) -> dict | None:
     )
 
     return result.data[0] if result.data else None
+
+async def unlink_document_from_chats(document_id: str) -> None:
+    """
+    Remove a document from all chat sessions it is linked to.
+
+    Two-step cleanup:
+        1. Delete all rows in ai_chat_documents for this document.
+        2. Remove the document_id from ai_chats.document_ids JSON cache
+           for every affected chat.
+
+    The junction table deletion is the critical step — it prevents the
+    document from being included in future vector searches even if the
+    cache update fails.
+
+    Args:
+        document_id: UUID of the document being deleted.
+    """
+    sb = get_supabase_client()
+
+    # Find all chats this document is linked to
+    linked_chats = (
+        sb.table("ai_chat_documents")
+        .select("chat_id")
+        .eq("document_id", document_id)
+        .execute()
+    )
+
+    chat_ids = [row["chat_id"] for row in (linked_chats.data or [])]
+
+    if not chat_ids:
+        return
+
+    # Delete junction table rows — critical step
+    sb.table("ai_chat_documents").delete().eq("document_id", document_id).execute()
+
+    # Update ai_chats.document_ids cache for each affected chat
+    for chat_id in chat_ids:
+        try:
+            chat = (
+                sb.table("ai_chats")
+                .select("document_ids")
+                .eq("id", chat_id)
+                .limit(1)
+                .execute()
+            )
+            if not chat.data:
+                continue
+
+            raw = chat.data[0].get("document_ids") or "[]"
+            existing_ids = json.loads(raw) if isinstance(raw, str) else list(raw)
+            updated_ids = [id for id in existing_ids if id != document_id]
+
+            sb.table("ai_chats").update({
+                "document_ids": json.dumps(updated_ids),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("id", chat_id).execute()
+
+        except Exception as exc:
+            # Non-fatal — junction row already deleted so document won't
+            # be searched even if the cache is stale.
+            print(f"[WARN] Failed to update document_ids cache for chat {chat_id}: {exc}")

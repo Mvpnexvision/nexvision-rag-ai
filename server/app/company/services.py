@@ -196,3 +196,57 @@ async def update_company(company_id: str, name: str = None, business_line: str =
 
     # Return updated company
     return await get_company_by_id(company_id)
+
+# Add to the bottom of app/company/services.py
+
+async def get_company_users(company_id: str) -> list[dict]:
+    """Fetch all users belonging to a company."""
+    sb = get_supabase_client()
+    try:
+        result = (
+            sb.table("users")
+            .select("id, name, email, role, status")
+            .eq("company_id", company_id)
+            .order("name")
+            .execute()
+        )
+        if not result.data:
+            return []
+        return [
+            {
+                "id": row.get("id"),
+                "name": row.get("name"),
+                "email": row.get("email"),
+                "role": row.get("role"),
+                "status": row.get("status"),
+            }
+            for row in result.data
+        ]
+    except Exception as e:
+        raise Exception(f"Failed to fetch company users: {e}")
+
+
+async def get_company_ai_activity(company_id: str, limit: int = 5) -> list[dict]:
+    """Fetch recent AI questions for a company."""
+    sb = get_supabase_client()
+    try:
+        result = (
+            sb.table("ai_questions")
+            .select("id, question, created_at")
+            .eq("company_id", company_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        if not result.data:
+            return []
+        return [
+            {
+                "id": row.get("id"),
+                "question": row.get("question"),
+                "created_at": str(row.get("created_at")) if row.get("created_at") else None,
+            }
+            for row in result.data
+        ]
+    except Exception as e:
+        raise Exception(f"Failed to fetch company AI activity: {e}")

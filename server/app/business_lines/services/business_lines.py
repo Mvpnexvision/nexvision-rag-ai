@@ -65,9 +65,10 @@ async def get_all_business_lines() -> list[dict]:
 
         # Sort alphabetically and build response list
         business_lines = [
-            {"name": line, "company_count": count}
+            {"name": line.title(), "company_count": count}
             for line, count in sorted(counts.items())
         ]
+
 
         return business_lines
 
