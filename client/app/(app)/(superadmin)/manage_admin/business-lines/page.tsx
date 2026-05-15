@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { getBusinessLines, type BusinessLineRecord } from "@/lib/api/business_lines";
 
 interface BusinessLineCompany {
   id: string;
@@ -11,63 +12,36 @@ interface BusinessLineCompany {
 interface BusinessLine {
   id: string;
   name: string;
-  status: "Active" | "Inactive";
   companies: BusinessLineCompany[];
+  count: number;
 }
 
 export default function BusinessLinesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [businessLines, setBusinessLines] = useState<BusinessLine[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [businessLines, setBusinessLines] = useState<BusinessLine[]>([
-    {
-      id: "1",
-      name: "Logistics",
-      status: "Active",
-      companies: [
-        { id: "1", name: "NexVision Logistics", status: "Active" },
-      ],
-    },
-    {
-      id: "2",
-      name: "Clinic/Aesthetics",
-      status: "Active",
-      companies: [
-        { id: "2", name: "NexVision Clinic", status: "Active" },
-      ],
-    },
-    {
-      id: "3",
-      name: "HR/Admin",
-      status: "Active",
-      companies: [
-        { id: "3", name: "NexVision HR", status: "Active" },
-      ],
-    },
-    {
-      id: "4",
-      name: "Retail",
-      status: "Active",
-      companies: [
-        { id: "4", name: "RetailPro", status: "Inactive" },
-      ],
-    },
-        {
-      id: "5",
-      name: "Construction",
-      status: "Active",
-      companies: [
-        { id: "5", name: "Construct Pro", status: "Inactive" },
-      ],
-    },
-        {
-      id: "6",
-      name: "Custom Business",
-      status: "Active",
-      companies: [
-        { id: "6", name: "Custom Business", status: "Inactive" },
-      ],
-    },
-  ]);
+  useEffect(() => {
+    const fetchBusinessLines = async () => {
+      try {
+        const data = await getBusinessLines();
+        const mappedData: BusinessLine[] = data.map((item, index) => ({
+          id: index.toString(),
+          name: item.name,
+          companies: [], // Not provided by API
+          count: item.company_count,
+        }));
+        setBusinessLines(mappedData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch business lines");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBusinessLines();
+  }, []);
 
   const filteredLines = useMemo(
     () => businessLines.filter((line) =>
@@ -98,39 +72,45 @@ export default function BusinessLinesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Business Line</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLines.map((line) => (
-                <tr key={line.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-3 font-medium text-gray-900">{line.name}</td>
-                  <td className="px-6 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                      line.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}>
-                      {line.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {filteredLines.length === 0 && (
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-gray-600">Loading business lines...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <td colSpan={2} className="px-6 py-6 text-center text-sm text-gray-500">
-                    No business lines match your search.
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Business Line</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 text-center">Company Count</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredLines.map((line) => (
+                  <tr key={line.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-3 font-medium text-gray-900">{line.name}</td>
+                    <td className="px-6 py-3 font-medium text-gray-600 align-middle">{line.count}</td>
+                  </tr>
+                ))}
+                {filteredLines.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="px-6 py-6 text-center text-sm text-gray-500">
+                      No business lines match your search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
     </div>

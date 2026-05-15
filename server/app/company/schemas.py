@@ -3,9 +3,12 @@ from typing import Optional
 
 
 class CompanyCreate(BaseModel):
-    """Request body for creating a company"""
+    """Request body for creating a new company"""
     name: str = Field(..., alias="company_name")
-    business_line: str = Field(..., description="Business line category")
+    business_line: str
+
+    class Config:
+        populate_by_name = True
 
 
 class CompanyUpdate(BaseModel):
@@ -13,6 +16,9 @@ class CompanyUpdate(BaseModel):
     name: Optional[str] = Field(None, alias="company_name")
     business_line: Optional[str] = None
     status: Optional[str] = Field(None, description="Active or Inactive")
+
+    class Config:
+        populate_by_name = True
 
 
 class CompanyResponse(BaseModel):

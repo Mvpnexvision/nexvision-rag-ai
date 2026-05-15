@@ -11,7 +11,15 @@ The query groups companies by their `business_line` value and counts
 how many companies belong to each line.
 """
 
+from core.config import settings
 from core.supabase_client import get_supabase_client
+
+MOCK_BUSINESS_LINES = [
+    {"name": "Logistics Network", "company_count": 1},
+    {"name": "Operations", "company_count": 2},
+    {"name": "Sales & Marketing", "company_count": 2},
+    {"name": "Warehouse", "company_count": 1},
+]
 
 
 async def get_all_business_lines() -> list[dict]:
@@ -35,6 +43,8 @@ async def get_all_business_lines() -> list[dict]:
             {"name": "Warehouse",         "company_count": 1},
         ]
     """
+    if not settings.SUPABASE_URL or not settings.SUPABASE_SERVICE_KEY:
+        return MOCK_BUSINESS_LINES
     sb = get_supabase_client()
 
     try:
