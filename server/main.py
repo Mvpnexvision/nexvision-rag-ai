@@ -95,13 +95,22 @@ app.include_router(company_router, prefix="/companies", tags=["Company Managemen
 # Auth Module: /auth/me
 app.include_router(auth_router, prefix="/auth", tags=["Auth Module"])
 
-# Add this alongside your other app.include_router() calls
+# Business Lines Module: /business-lines/list, /business-lines/{id}, etc.
 app.include_router(
     business_lines_router,
     prefix="/business-lines",
     tags=["Business Lines"],
 )
 
+# User Module: /users/list, /users/{id}, etc.
+from app.users.router import router as users_router
+
+# Add this alongside your other app.include_router() calls
+app.include_router(
+    users_router,
+    prefix="/users",
+    tags=["Users"],
+)
 
 # Reports Module: /reports/generate, GET /reports
 # app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
