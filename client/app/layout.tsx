@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "DocuAI - Prototype",
+  title: "NexVision RAG AI",
   description: "AI Document Assistant",
 };
 

@@ -46,7 +46,9 @@ export default function Sidebar({
   const ownerNavItems: NavItem[] = [
     { name: "Dashboard", path: "/dashboard", icon: "fa-border-all" },
     { name: "AI Chat", path: "/chat", icon: "fa-message" },
+    { name: "AI Insights", path: "/recommendations", icon: "fa-circle-info" },
     { name: "Documents", path: "/documents", icon: "fa-folder-open" },
+
   ];
 
   const superadminNav: NavCategory[] = [
@@ -88,11 +90,11 @@ export default function Sidebar({
   const displayRole = profile?.role ?? role;
   const avatarInitials = profile?.name
     ? profile.name
-        .split(" ")
-        .map((part) => part[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
     : displayRole.charAt(0).toUpperCase();
 
   // Close dropdown when clicking outside
@@ -186,88 +188,85 @@ export default function Sidebar({
         <nav className="flex flex-col flex-1 p-4 gap-1 overflow-y-auto">
           {isSuperadmin
             ? // Superadmin categorized navigation
-              superadminNav.map((category) => (
-                <div key={category.title}>
-                  {/* Category header */}
-                  {!isCollapsed && (
-                    <button
-                      onClick={() => toggleCategory(category.title)}
-                      className="
+            superadminNav.map((category) => (
+              <div key={category.title}>
+                {/* Category header */}
+                {!isCollapsed && (
+                  <button
+                    onClick={() => toggleCategory(category.title)}
+                    className="
                                             w-full flex items-center justify-between
                                             px-4 py-2.5 mb-1
                                             text-xs font-semibold text-gray-400 uppercase tracking-wider
                                             hover:text-gray-300
                                             transition-colors
                                         "
-                    >
-                      {category.title}
-                      <i
-                        className={`fa-solid fa-chevron-down text-xs transition-transform ${
-                          expandedCategories.includes(category.title)
-                            ? ""
-                            : "-rotate-90"
+                  >
+                    {category.title}
+                    <i
+                      className={`fa-solid fa-chevron-down text-xs transition-transform ${expandedCategories.includes(category.title)
+                          ? ""
+                          : "-rotate-90"
                         }`}
-                      ></i>
-                    </button>
-                  )}
+                    ></i>
+                  </button>
+                )}
 
-                  {/* Category items */}
-                  {expandedCategories.includes(category.title) &&
-                    category.items.map((item) => (
-                      <Link
-                        key={item.path}
-                        href={item.path}
-                        aria-label={item.name}
-                        onClick={() => isMobileOpen && toggleMobile()}
-                        className={`
+                {/* Category items */}
+                {expandedCategories.includes(category.title) &&
+                  category.items.map((item) => (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      aria-label={item.name}
+                      onClick={() => isMobileOpen && toggleMobile()}
+                      className={`
                                             flex items-center
                                             rounded-md
                                             text-sm font-medium
                                             transition-colors
                                             py-3 mb-1
                                             ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
-                                            ${
-                                              pathname === item.path
-                                                ? "bg-[#122F35] text-[#0DBBC4]"
-                                                : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
-                                            }
+                                            ${pathname === item.path
+                          ? "bg-[#122F35] text-[#0DBBC4]"
+                          : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
+                        }
                                         `}
-                      >
-                        <i
-                          className={`fa-solid ${item.icon} text-lg w-5 text-center`}
-                        ></i>
-                        {!isCollapsed && <span>{item.name}</span>}
-                      </Link>
-                    ))}
-                </div>
-              ))
+                    >
+                      <i
+                        className={`fa-solid ${item.icon} text-lg w-5 text-center`}
+                      ></i>
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </Link>
+                  ))}
+              </div>
+            ))
             : // Owner simple navigation
-              ownerNavItems.map((item) => (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  aria-label={item.name}
-                  onClick={() => isMobileOpen && toggleMobile()}
-                  className={`
+            ownerNavItems.map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                aria-label={item.name}
+                onClick={() => isMobileOpen && toggleMobile()}
+                className={`
                                     flex items-center
                                     rounded-md
                                     text-sm font-medium
                                     transition-colors
                                     py-3
                                     ${isCollapsed ? "justify-center px-0" : "gap-4 px-4"}
-                                    ${
-                                      pathname === item.path
-                                        ? "bg-[#122F35] text-[#0DBBC4]"
-                                        : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
-                                    }
+                                    ${pathname === item.path
+                    ? "bg-[#122F35] text-[#0DBBC4]"
+                    : "text-white hover:bg-[#122F35] hover:text-[#0DBBC4]"
+                  }
                                 `}
-                >
-                  <i
-                    className={`fa-solid ${item.icon} text-lg w-5 text-center`}
-                  ></i>
-                  {!isCollapsed && <span>{item.name}</span>}
-                </Link>
-              ))}
+              >
+                <i
+                  className={`fa-solid ${item.icon} text-lg w-5 text-center`}
+                ></i>
+                {!isCollapsed && <span>{item.name}</span>}
+              </Link>
+            ))}
 
           <div className="flex-1" />
 

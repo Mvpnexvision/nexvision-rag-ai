@@ -119,7 +119,7 @@ async def get_superadmin_stats(company_id: str = Query(..., description="Company
             return DashboardStatsResponse(company_id=company_id, **MOCK_STATS)
 
         stats = await get_dashboard_stats(company_id)
-        return DashboardStatsResponse(**stats)
+        return DashboardStatsResponse(company_id=company_id, **stats)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -314,7 +314,7 @@ create table if not exists ai_questions (
 
     -- Insight flag — set by AI when data is sufficient for an actionable recommendation
     has_insight         boolean not null default false,
-
+    title               text,
     created_at          timestamptz default now(),
 
     constraint ai_questions_risk_check check (
