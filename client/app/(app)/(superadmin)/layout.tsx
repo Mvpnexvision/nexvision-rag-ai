@@ -1,20 +1,22 @@
 "use client";
 import { useState } from "react";
 import Sidebar from "../../../components/Sidebar";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     return (
-        <div className="flex h-screen overflow-hidden bg-neutral-50 w-full">
-            <Sidebar
-                role="superadmin"
-                isCollapsed={isCollapsed}
-                toggleSidebar={() => setIsCollapsed(!isCollapsed)}
-                isMobileOpen={isMobileOpen}
-                toggleMobile={() => setIsMobileOpen(!isMobileOpen)}
-            />
+        <ProtectedRoute role="superadmin">
+            <div className="flex h-screen overflow-hidden bg-neutral-50 w-full">
+                <Sidebar
+                    role="superadmin"
+                    isCollapsed={isCollapsed}
+                    toggleSidebar={() => setIsCollapsed(!isCollapsed)}
+                    isMobileOpen={isMobileOpen}
+                    toggleMobile={() => setIsMobileOpen(!isMobileOpen)}
+                />
 
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Mobile Header */}
@@ -33,6 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {children}
                 </main>
             </div>
-        </div>
+            </div>
+        </ProtectedRoute>
     );
 }
