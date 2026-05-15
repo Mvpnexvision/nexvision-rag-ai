@@ -1,35 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddUserModal, { UserFormData } from "./components/AddUserModal";
-
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  company: string;
-  role: string;
-  status: "Active" | "Inactive";
-}
+import { getAllUsers, User } from "@/lib/api/users";
+import Toast from "@/components/Toast";
 
 export default function UsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserFormData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const allUsers: User[] = [
-    { id: 1, firstName: "John", lastName: "Smith", email: "john@techcorp.com", company: "NexVision Logistics", role: "Admin", status: "Active" },
-    { id: 2, firstName: "Jane", lastName: "Doe", email: "jane@techcorp.com", company: "NexVision Clinic", role: "Manager", status: "Active" },
-    { id: 3, firstName: "Mike", lastName: "Johnson", email: "mike@logistix.com", company: "NexVision Logistics", role: "Manager", status: "Active" },
-    { id: 4, firstName: "Sarah", lastName: "Wilson", email: "sarah@logistix.com", company: "NexVision HR", role: "Staff", status: "Inactive" },
-    { id: 5, firstName: "Tom", lastName: "Brown", email: "tom@finance.com", company: "Construct Pro", role: "Admin", status: "Active" },
-  ];
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await getAllUsers();
+      setUsers(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load users";
+      console.error("Fetch users error:", err);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const filteredUsers = allUsers.filter((user) =>
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const filteredUsers = users.filter((user) =>
     `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.company.toLowerCase().includes(searchTerm.toLowerCase())
+    user.companyName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -64,63 +70,91 @@ export default function UsersPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-3 font-medium text-gray-900">{user.firstName} {user.lastName}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{user.email}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{user.company}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{user.role}</td>
-                  <td className="px-6 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                      user.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <button
-                      onClick={() => {
-                        setSelectedUser({
-                          firstName: user.firstName,
-                          lastName: user.lastName,
-                          email: user.email,
-                          company: user.company,
-                          role: user.role,
-                          status: user.status,
-                        });
-                        setShowModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-700 text-sm transition-colors"
-                    >
-                      Edit
-                    </button>
-                  </td>
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-700 font-medium">Error loading users</p>
+            <p className="text-sm text-red-600 mt-1">{error}</p>
+            <p className="text-xs text-red-500 mt-2">Make sure the backend server is running at {process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="flex flex-col items-center gap-2">
+              <i className="fa-solid fa-spinner animate-spin text-2xl text-gray-400"></i>
+              <p className="text-gray-600">Loading users...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Company</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-gray-900">{user.firstName} {user.lastName}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{user.email}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600">{user.companyName}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600 capitalize">{user.role}</td>
+                      <td className="px-6 py-3">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                          user.status === "active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}>
+                          {user.status === "active" ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedUser({
+                              id: user.id,
+                              firstName: user.firstName,
+                              lastName: user.lastName,
+                              email: user.email,
+                              company: user.companyName,
+                              companyId: user.companyId,
+                              role: user.role === "admin" ? "Manager" : "Admin",
+                              status: user.status === "active" ? "Active" : "Inactive",
+                            });
+                            setShowModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-700 text-sm transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-gray-600">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <AddUserModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         user={selectedUser}
+        onSuccess={fetchUsers}
       />
     </div>
   );
