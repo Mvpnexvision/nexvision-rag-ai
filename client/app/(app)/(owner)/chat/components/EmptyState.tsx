@@ -43,7 +43,7 @@ export default function EmptyState({ onFilesSelected }: EmptyStateProps) {
 
                 <div>
                     <p className="font-medium text-black mb-1">
-                        Click to upload <span className="font-normal text-gray-500">or drag and drop</span>
+                        Click to upload 
                     </p>
                     <p className="text-xs text-gray-500">
                         Supports PDF, DOCX, XLSX, TXT, CSV, and MD (max. 20MB)

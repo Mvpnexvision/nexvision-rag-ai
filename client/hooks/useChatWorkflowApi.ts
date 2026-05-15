@@ -28,6 +28,22 @@ export interface DocumentStatusResponse {
   processing_status: string;
 }
 
+export interface DocumentProcessResponse {
+  document_id: string;
+  file_name: string;
+  processing_status: string;
+  total_chunks: number;
+  summary: string | null;
+  error_detail: string | null;
+  message: string;
+}
+
+export interface DocumentDeleteResponse {
+  document_id: string;
+  status: string;
+  message: string;
+}
+
 export interface AIOutput {
   direct_answer: string;
   evidence_found: string[];
@@ -50,6 +66,11 @@ export interface AIChatResponse {
   has_insight: boolean;
   recommendation_id: string | null;
   chunks_used: number;
+}
+
+export interface GenerateChatTitleResponse {
+  chat_id: string;
+  title: string;
 }
 
 export interface ChatListItem {
@@ -110,11 +131,12 @@ interface UseChatWorkflowApiReturn {
     uploadedBy: string;
     tags?: string[];
   }) => Promise<UploadDocumentResponse>;
+  deleteDocument: (documentId: string) => Promise<DocumentDeleteResponse>;
   linkDocumentsToChat: (params: {
     chatId: string;
     documentIds: string[];
   }) => Promise<LinkDocumentsResponse>;
-  processDocument: (documentId: string) => Promise<unknown>;
+  processDocument: (documentId: string) => Promise<DocumentProcessResponse>;
   getDocumentStatus: (documentId: string) => Promise<DocumentStatusResponse>;
   sendAIChat: (params: {
     chatId: string;
@@ -122,6 +144,7 @@ interface UseChatWorkflowApiReturn {
     userId: string;
     question: string;
   }) => Promise<AIChatResponse>;
+  generateChatTitle: (chatId: string) => Promise<GenerateChatTitleResponse>;
   listChats: (params: {
     companyId: string;
     limit?: number;
@@ -131,7 +154,7 @@ interface UseChatWorkflowApiReturn {
 }
 
 export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
-  const { loading, error, get, post } = useFetch({ auth: true });
+  const { loading, error, get, post, del } = useFetch({ auth: true });
 
   const createChat = async ({
     companyId,
@@ -173,6 +196,10 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
+  const deleteDocument = async (documentId: string): Promise<DocumentDeleteResponse> => {
+    return del<DocumentDeleteResponse>(`/documents/${documentId}`);
+  };
+
   const linkDocumentsToChat = async ({
     chatId,
     documentIds,
@@ -185,8 +212,10 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
-  const processDocument = async (documentId: string): Promise<unknown> => {
-    return post(`/documents/${documentId}/process`);
+  const processDocument = async (
+    documentId: string,
+  ): Promise<DocumentProcessResponse> => {
+    return post<DocumentProcessResponse>(`/documents/${documentId}/process`);
   };
 
   const getDocumentStatus = async (documentId: string): Promise<DocumentStatusResponse> => {
@@ -212,6 +241,12 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
+  const generateChatTitle = async (
+    chatId: string,
+  ): Promise<GenerateChatTitleResponse> => {
+    return post<GenerateChatTitleResponse>(`/insights/chat/${chatId}/generate-title`);
+  };
+
   const listChats = async ({
     companyId,
     limit = 20,
@@ -235,10 +270,12 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     error,
     createChat,
     uploadDocument,
+    deleteDocument,
     linkDocumentsToChat,
     processDocument,
     getDocumentStatus,
     sendAIChat,
+    generateChatTitle,
     listChats,
     getChatMessages,
   };

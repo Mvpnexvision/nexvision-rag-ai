@@ -47,6 +47,7 @@ from app.document.services.storage import (
 from app.document.services.vector_store import (
     store_chunks,
     store_document_record,
+    unlink_document_from_chats,
     update_document_summary,
     delete_chunks_by_document,
     delete_document_record,
@@ -405,6 +406,10 @@ async def get_document_status(document_id: str):
 # DELETE /documents/{id}
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# DELETE /documents/{id}
+# ---------------------------------------------------------------------------
+
 @router.delete(
     "/{document_id}",
     response_model=DocumentDeleteResponse,
@@ -413,16 +418,13 @@ async def get_document_status(document_id: str):
         "Permanently removes:\n"
         "- The document record from the `documents` table\n"
         "- All vector chunks from `document_chunks`\n"
-        "- The original file from Supabase Storage\n\n"
+        "- The original file from Supabase Storage\n"
+        "- All chat links from `ai_chat_documents`\n"
+        "- The document ID from `ai_chats.document_ids` cache\n\n"
         "This action is irreversible. The file must be re-uploaded to reingest."
     ),
 )
 async def delete_document(document_id: str):
-    """
-    Hard delete a document and all its associated data.
-
-    Removes the DB record, all vector chunks, and the stored file.
-    """
     doc = await get_document_by_id(document_id)
     if not doc:
         return DocumentDeleteResponse(
@@ -430,6 +432,9 @@ async def delete_document(document_id: str):
             status="not_found",
             message="Document not found — it may already have been deleted.",
         )
+
+    # Unlink from all chat sessions
+    await unlink_document_from_chats(document_id)
 
     # Delete vector chunks
     await delete_chunks_by_document(document_id)

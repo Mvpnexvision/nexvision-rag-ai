@@ -20,7 +20,6 @@ interface BusinessLine {
 }
 
 export default function BusinessLinesPage() {
-  const [searchTerm, setSearchTerm] = useState("");
   const [businessLines, setBusinessLines] = useState<BusinessLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +77,7 @@ export default function BusinessLinesPage() {
               />
             </div>
           </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto"></div>
         </div>
 
         {loading && (
@@ -119,7 +119,7 @@ export default function BusinessLinesPage() {
                     </td>
                   </tr>
                 ))}
-                {filteredLines.length === 0 && (
+                {businessLines.length === 0 && (
                   <tr>
                     <td
                       colSpan={2}
