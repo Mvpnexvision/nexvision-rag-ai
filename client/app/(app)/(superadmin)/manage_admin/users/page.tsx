@@ -19,11 +19,11 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const allUsers: User[] = [
-    { id: 1, firstName: "John", lastName: "Smith", email: "john@techcorp.com", company: "TechCorp Inc", role: "Admin", status: "Active" },
-    { id: 2, firstName: "Jane", lastName: "Doe", email: "jane@techcorp.com", company: "TechCorp Inc", role: "Manager", status: "Active" },
-    { id: 3, firstName: "Mike", lastName: "Johnson", email: "mike@logistix.com", company: "LogistiX Solutions", role: "Manager", status: "Active" },
-    { id: 4, firstName: "Sarah", lastName: "Wilson", email: "sarah@logistix.com", company: "LogistiX Solutions", role: "Staff", status: "Inactive" },
-    { id: 5, firstName: "Tom", lastName: "Brown", email: "tom@finance.com", company: "FinanceHub", role: "Admin", status: "Active" },
+    { id: 1, firstName: "John", lastName: "Smith", email: "john@techcorp.com", company: "NexVision Logistics", role: "Admin", status: "Active" },
+    { id: 2, firstName: "Jane", lastName: "Doe", email: "jane@techcorp.com", company: "NexVision Clinic", role: "Manager", status: "Active" },
+    { id: 3, firstName: "Mike", lastName: "Johnson", email: "mike@logistix.com", company: "NexVision Logistics", role: "Manager", status: "Active" },
+    { id: 4, firstName: "Sarah", lastName: "Wilson", email: "sarah@logistix.com", company: "NexVision HR", role: "Staff", status: "Inactive" },
+    { id: 5, firstName: "Tom", lastName: "Brown", email: "tom@finance.com", company: "Construct Pro", role: "Admin", status: "Active" },
   ];
 
   const filteredUsers = allUsers.filter((user) =>

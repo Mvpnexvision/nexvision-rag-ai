@@ -18,10 +18,12 @@ interface AddUserModalProps {
 }
 
 const companyBusinessLineMap: Record<string, string> = {
-  "TechCorp Inc": "Technology",
-  "LogistiX Solutions": "Logistics",
-  FinanceHub: "Finance",
+  "NexVision Logistics": "Logistics",
+  "NexVision Clinic": "Clinic/Aesthetics",
+  "NexVision HR": "HR/Admin",
   RetailPro: "Retail",
+  "Construct Pro": "Construction",
+  "Custom Business": "Custom Business",
 };
 
 export default function AddUserModal({ isOpen, onClose, user }: AddUserModalProps) {
@@ -122,10 +124,12 @@ export default function AddUserModal({ isOpen, onClose, user }: AddUserModalProp
               className="w-full p-2.5 text-black border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black bg-white cursor-pointer"
             >
               <option value="">Select a company</option>
-              <option value="TechCorp Inc">TechCorp Inc</option>
-              <option value="LogistiX Solutions">LogistiX Solutions</option>
-              <option value="FinanceHub">FinanceHub</option>
+              <option value="NexVision Logistics">NexVision Logistics</option>
+              <option value="NexVision Clinic">NexVision Clinic</option>
+              <option value="NexVision HR">NexVision HR</option>
               <option value="RetailPro">RetailPro</option>
+              <option value="Construct Pro">Construct Pro</option>
+              <option value="Custom Business">Custom Business</option>
             </select>
           </div>
 
