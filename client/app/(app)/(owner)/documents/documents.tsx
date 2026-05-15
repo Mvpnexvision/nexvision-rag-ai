@@ -161,6 +161,9 @@ export default function Documents() {
     }, [profile?.company_id, debouncedSearchValue, filters, get]);
 
     const docs = documents;
+    const hasActiveFilters = Boolean(
+        searchValue.trim() || filters.fileType || filters.dateFrom || filters.dateTo,
+    );
 
     // Grouping logic
     const groupedDocs = useMemo(() => {
@@ -202,6 +205,8 @@ export default function Documents() {
                 <GroupedDocumentView
                     groupedDocs={groupedDocs}
                     viewMode={viewMode}
+                    loading={loading}
+                    hasActiveFilters={hasActiveFilters}
                 />
 
             </div>
