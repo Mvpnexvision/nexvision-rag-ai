@@ -55,7 +55,7 @@ async def get_superadmin_stats(company_id: str = Query(..., description="Company
     """Get dashboard stats for superadmin viewing a specific company"""
     try:
         stats = await get_dashboard_stats(company_id)
-        return DashboardStatsResponse(**stats)
+        return DashboardStatsResponse(company_id=company_id, **stats)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
