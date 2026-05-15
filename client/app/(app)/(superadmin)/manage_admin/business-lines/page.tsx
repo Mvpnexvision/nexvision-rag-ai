@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { getBusinessLines, type BusinessLineRecord } from "@/lib/api/business_lines";
+import {
+  getBusinessLines,
+  type BusinessLineRecord,
+} from "@/lib/api/business_lines";
 
 interface BusinessLineCompany {
   id: string;
@@ -34,7 +37,9 @@ export default function BusinessLinesPage() {
         }));
         setBusinessLines(mappedData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch business lines");
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch business lines",
+        );
       } finally {
         setLoading(false);
       }
@@ -44,10 +49,11 @@ export default function BusinessLinesPage() {
   }, []);
 
   const filteredLines = useMemo(
-    () => businessLines.filter((line) =>
-      line.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ),
-    [businessLines, searchTerm]
+    () =>
+      businessLines.filter((line) =>
+        line.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+    [businessLines, searchTerm],
   );
 
   return (
@@ -56,10 +62,12 @@ export default function BusinessLinesPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-medium text-black">Business Lines</h2>
-            <p className="text-gray-600 text-sm">Manage business lines across companies</p>
+            <p className="text-gray-600 text-sm">
+              Manage business lines across companies
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-            <div className="flex items-center gap-2 bg-neutral-50 border border-gray-200 rounded-md px-3 py-2 w-full sm:w-72">
+            <div className="flex items-center gap-2 text-black bg-neutral-50 border border-gray-200 rounded-md px-3 py-2 flex-1 md:flex-none md:w-64 focus-within:border-black cursor-text">
               <i className="fa-solid fa-magnifying-glass text-gray-400"></i>
               <input
                 type="text"
@@ -89,20 +97,34 @@ export default function BusinessLinesPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Business Line</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 text-center">Company Count</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">
+                    Business Line
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 text-center">
+                    Company Count
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredLines.map((line) => (
-                  <tr key={line.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-3 font-medium text-gray-900">{line.name}</td>
-                    <td className="px-6 py-3 font-medium text-gray-600 align-middle">{line.count}</td>
+                  <tr
+                    key={line.id}
+                    className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-3 font-medium text-gray-900">
+                      {line.name}
+                    </td>
+                    <td className="px-6 py-3 font-medium text-gray-600 align-middle">
+                      {line.count}
+                    </td>
                   </tr>
                 ))}
                 {filteredLines.length === 0 && (
                   <tr>
-                    <td colSpan={2} className="px-6 py-6 text-center text-sm text-gray-500">
+                    <td
+                      colSpan={2}
+                      className="px-6 py-6 text-center text-sm text-gray-500"
+                    >
                       No business lines match your search.
                     </td>
                   </tr>
@@ -112,7 +134,6 @@ export default function BusinessLinesPage() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
