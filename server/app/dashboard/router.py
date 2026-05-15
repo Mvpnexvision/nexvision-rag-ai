@@ -113,91 +113,91 @@ async def get_stats(
 
 
 # ---------------------------------------------------------------------------
-# GET /dashboard/insights
+# GET /dashboard/insights (removed in favor of GET /dashboard/recommendations for FE simplicity)
 # ---------------------------------------------------------------------------
 
-@router.get(
-    "/insights",
-    response_model=DashboardInsightsResponse,
-    summary="Get recent AI insights",
-    description=(
-        "Returns the top 3 most recent AI insights for the dashboard "
-        "RecentRecommendations component.\n\n"
-        "Each insight includes the original question, AI-generated answer, "
-        "and risk level.\n\n"
-        "All data is scoped to the requesting company (multi-tenant access control)."
-    ),
-)
-async def get_insights(
-    company_id: str = Query(..., description="UUID of the company to get insights for"),
-):
-    """
-    Fetch recent AI insights for a company.
+# @router.get(
+#     "/insights",
+#     response_model=DashboardInsightsResponse,
+#     summary="Get recent AI insights",
+#     description=(
+#         "Returns the top 3 most recent AI insights for the dashboard "
+#         "RecentRecommendations component.\n\n"
+#         "Each insight includes the original question, AI-generated answer, "
+#         "and risk level.\n\n"
+#         "All data is scoped to the requesting company (multi-tenant access control)."
+#     ),
+# )
+# async def get_insights(
+#     company_id: str = Query(..., description="UUID of the company to get insights for"),
+# ):
+#     """
+#     Fetch recent AI insights for a company.
     
-    Returns the top 3 most recent insights for the RecentRecommendations component.
+#     Returns the top 3 most recent insights for the RecentRecommendations component.
     
-    **Query Parameters:**
-    - `company_id` — UUID of the company (required)
+#     **Query Parameters:**
+#     - `company_id` — UUID of the company (required)
     
-    **Response Example:**
-    ```json
-    {
-        "company_id": "550e8400-e29b-41d4-a716-446655440000",
-        "insights": [
-            {
-                "id": "uuid-1",
-                "prompt": "Adidas - Low Sales",
-                "subtitle": "Revenue dropped 12% in Q3 compared to last quarter.",
-                "risk_level": "High"
-            },
-            {
-                "id": "uuid-2",
-                "prompt": "Nike - Low Customer Satisfaction",
-                "subtitle": "NPS score fell below threshold across 3 regions.",
-                "risk_level": "Medium"
-            }
-        ]
-    }
-    ```
+#     **Response Example:**
+#     ```json
+#     {
+#         "company_id": "550e8400-e29b-41d4-a716-446655440000",
+#         "insights": [
+#             {
+#                 "id": "uuid-1",
+#                 "prompt": "Adidas - Low Sales",
+#                 "subtitle": "Revenue dropped 12% in Q3 compared to last quarter.",
+#                 "risk_level": "High"
+#             },
+#             {
+#                 "id": "uuid-2",
+#                 "prompt": "Nike - Low Customer Satisfaction",
+#                 "subtitle": "NPS score fell below threshold across 3 regions.",
+#                 "risk_level": "Medium"
+#             }
+#         ]
+#     }
+#     ```
     
-    **Errors:**
-    - `400` — Missing or invalid `company_id`
-    - `500` — Database query failed
-    """
+#     **Errors:**
+#     - `400` — Missing or invalid `company_id`
+#     - `500` — Database query failed
+#     """
     
-    # Validate company_id is not empty
-    if not company_id or not company_id.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="company_id is required and must not be empty",
-        )
+#     # Validate company_id is not empty
+#     if not company_id or not company_id.strip():
+#         raise HTTPException(
+#             status_code=400,
+#             detail="company_id is required and must not be empty",
+#         )
     
-    try:
-        # Fetch recent insights
-        insights_data = await get_recent_insights(company_id)
+#     try:
+#         # Fetch recent insights
+#         insights_data = await get_recent_insights(company_id)
         
-        # Map to response schema
-        insights = [
-            InsightItem(
-                id=item["id"],
-                prompt=item["prompt"],
-                subtitle=item["subtitle"],
-                risk_level=item["risk_level"],
-            )
-            for item in insights_data
-        ]
+#         # Map to response schema
+#         insights = [
+#             InsightItem(
+#                 id=item["id"],
+#                 prompt=item["prompt"],
+#                 subtitle=item["subtitle"],
+#                 risk_level=item["risk_level"],
+#             )
+#             for item in insights_data
+#         ]
         
-        # Build response
-        return DashboardInsightsResponse(
-            company_id=company_id,
-            insights=insights,
-        )
+#         # Build response
+#         return DashboardInsightsResponse(
+#             company_id=company_id,
+#             insights=insights,
+#         )
     
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch dashboard insights: {str(exc)}",
-        )
+#     except Exception as exc:
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Failed to fetch dashboard insights: {str(exc)}",
+#         )
 
 
 # ---------------------------------------------------------------------------
