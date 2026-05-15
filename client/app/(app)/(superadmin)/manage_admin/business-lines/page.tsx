@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { getBusinessLines } from "@/lib/api/business_lines";
+import {
+  getBusinessLines,
+  type BusinessLineRecord,
+} from "@/lib/api/business_lines";
 
 interface BusinessLineCompany {
   id: string;
@@ -44,6 +47,14 @@ export default function BusinessLinesPage() {
     fetchBusinessLines();
   }, []);
 
+  const filteredLines = useMemo(
+    () =>
+      businessLines.filter((line) =>
+        line.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      ),
+    [businessLines, searchTerm],
+  );
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -53,6 +64,18 @@ export default function BusinessLinesPage() {
             <p className="text-gray-600 text-sm">
               Manage business lines across companies
             </p>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 text-black bg-neutral-50 border border-gray-200 rounded-md px-3 py-2 flex-1 md:flex-none md:w-64 focus-within:border-black cursor-text">
+              <i className="fa-solid fa-magnifying-glass text-gray-400"></i>
+              <input
+                type="text"
+                placeholder="Search business lines..."
+                className="bg-transparent border-none outline-none text-sm w-full"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto"></div>
         </div>
@@ -83,7 +106,7 @@ export default function BusinessLinesPage() {
                 </tr>
               </thead>
               <tbody>
-                {businessLines.map((line) => (
+                {filteredLines.map((line) => (
                   <tr
                     key={line.id}
                     className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
