@@ -10,12 +10,13 @@ Endpoints:
     POST  /chat/{chat_id}/documents    Link existing documents to a chat
     GET   /chat/{chat_id}              Get chat metadata + document list
     GET   /chat/{chat_id}/messages     Get all questions/answers for a chat
+    GET   /chat                        Get all chats for a company admin
 
     POST  /ai/chat                     Ask a question (runs full RAG pipeline)
     GET   /ai/questions                Get question history for a chat
 
     GET   /recommendations             List all recommendations for a company (JOINed with ai_questions)
-    PATCH /recommendations/{id}        Update status/assignee/due_date/notes only
+    PATCH /recommendations/{id}        Update status only
 
 All endpoints are company-scoped via current_user from JWT.
 All endpoints visible in Swagger at: http://localhost:8000/docs
@@ -32,7 +33,10 @@ from core.config import settings
 from core.logger import debug_log
 
 from app.insight.schemas import (
+    ChatListItem,
+    ChatListResponse,
     LinkDocumentsRequest,
+    LinkDocumentsResponse,
     NewChatRequest,
     NewChatResponse,
     ChatMetadataResponse,
@@ -96,11 +100,17 @@ async def _save_ai_question(
         "missing_data": json.dumps(answer.missing_data),
         "sources_json": json.dumps(answer.sources),
         "has_insight": has_insight,
+        "title": answer.title if has_insight else None,
     }
 
     try:
         sb.table("ai_questions").insert(record).execute()
         debug_log("REASONING", f"Saved ai_question {question_id} (has_insight={has_insight})")
+
+        # Bump ai_chats.updated_at so list_chats sorts by most recently active
+        sb.table("ai_chats").update(
+            {"updated_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("id", chat_id).execute()
     except Exception as exc:
         # Don't fail the API response if the DB write fails — log and continue
         print(f"[WARN] Failed to save ai_question: {exc}")
@@ -192,10 +202,20 @@ async def create_chat(
 # ── POST /chat/{chat_id}/documents/link ─────────────────────────────────────────────
 
 
-@router.post("/chat/{chat_id}/documents/link")
+@router.post(
+    "/chat/{chat_id}/documents/link", 
+    response_model=LinkDocumentsResponse,
+    summary="Link existing documents to a chat session",
+    description=(
+        "Link existing documents to a chat session by their UUIDs.\n\n"
+        "This endpoint updates the ai_chats.document_ids list and also inserts "
+        "into the ai_chat_documents junction table for accurate RAG scoping.\n\n"
+        "If a document is already linked, it will be skipped without error."
+    ),
+)
 async def link_documents_to_chat(
     chat_id: str,
-    body: LinkDocumentsRequest,  # { document_ids: list[str] }
+    body: LinkDocumentsRequest,
     current_user: CurrentUser = Depends(get_current_user),
 ):
     sb = get_supabase_client()
@@ -211,12 +231,20 @@ async def link_documents_to_chat(
     all_ids = existing_ids + body.document_ids
 
     # Update ai_chats
-    sb.table("ai_chats").update({
-        "document_ids": json.dumps(all_ids),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }).eq("id", chat_id).execute()
+    try:
+        sb.table("ai_chats").update({
+            "document_ids": json.dumps(all_ids),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", chat_id).execute()
+    except Exception as exc:
+        debug_log("REASONING", f"Failed to update ai_chats document_ids for chat {chat_id}: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to link documents to chat: {exc}",
+        )
 
-    # Insert into joint table
+    # Insert into joint table — skip duplicates, log other failures
+    failed_ids: list[str] = []
     for doc_id in body.document_ids:
         try:
             sb.table("ai_chat_documents").insert({
@@ -224,11 +252,29 @@ async def link_documents_to_chat(
                 "chat_id": chat_id,
                 "document_id": doc_id,
             }).execute()
-        except Exception:
-            pass  # Ignore duplicates
+        except Exception as exc:
+            error_str = str(exc)
+            if "duplicate" in error_str.lower() or "unique" in error_str.lower():
+                # Already linked — not an error, skip silently
+                debug_log("REASONING", f"Document {doc_id} already linked to chat {chat_id}, skipping.")
+            else:
+                # Genuine failure — log and collect for response
+                debug_log("REASONING", f"Failed to insert ai_chat_documents row for doc {doc_id}: {exc}")
+                failed_ids.append(doc_id)
 
-    return {"chat_id": chat_id, "linked_document_ids": body.document_ids}
+    response = LinkDocumentsResponse(
+        chat_id=chat_id,
+        linked_document_ids=body.document_ids
+    )
 
+    if failed_ids:
+        response["warnings"] = (
+            f"{len(failed_ids)} document(s) failed to insert into ai_chat_documents "
+            f"but were added to ai_chats.document_ids: {failed_ids}. "
+            "Vector search will still work; the junction table may be out of sync."
+        )
+
+    return response
 
 # ── GET /chat/{chat_id} ────────────────────────────────────────────────────────
 
@@ -294,6 +340,72 @@ async def get_chat_messages(
         total=len(questions),
     )
 
+# ── GET /chat ──────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/chat",
+    response_model=ChatListResponse,
+    summary="List all chat sessions for a user",
+    description=(
+        "Returns all chat sessions belonging to the authenticated user "
+        "within a company, ordered by most recently updated first.\n\n"
+        "Use `limit` and `offset` for pagination."
+    ),
+)
+async def list_chats(
+    company_id: str = Query(..., description="UUID of the company"),
+    limit: int = Query(default=20, ge=1, le=100, description="Results per page"),
+    offset: int = Query(default=0, ge=0, description="Pagination offset"),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """List paginated chat sessions for the current user within a company."""
+    sb = get_supabase_client()
+
+    # Count total for pagination metadata
+    count_result = (
+        sb.table("ai_chats")
+        .select("id", count="exact")
+        .eq("company_id", company_id)
+        .eq("user_id", current_user.id)
+        .execute()
+    )
+    total = count_result.count or 0
+
+    # Fetch paginated rows
+    result = (
+        sb.table("ai_chats")
+        .select("id, company_id, user_id, title, document_ids, created_at, updated_at")
+        .eq("company_id", company_id)
+        .eq("user_id", current_user.id)
+        .order("updated_at", desc=True)
+        .range(offset, offset + limit - 1)
+        .execute()
+    )
+
+    chats: list[ChatListItem] = []
+    for row in result.data or []:
+        raw_ids = row.get("document_ids") or "[]"
+        doc_ids = json.loads(raw_ids) if isinstance(raw_ids, str) else list(raw_ids)
+
+        chats.append(ChatListItem(
+            chat_id=row["id"],
+            title=row.get("title", "New Chat"),
+            company_id=row["company_id"],
+            user_id=row["user_id"],
+            document_ids=doc_ids,
+            created_at=str(row.get("created_at", "")),
+            updated_at=str(row.get("updated_at", "")),
+        ))
+
+    return ChatListResponse(
+        user_id=current_user.id,
+        company_id=company_id,
+        chats=chats,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
+
 
 # ── POST /ai/chat ──────────────────────────────────────────────────────────────
 
@@ -330,11 +442,34 @@ async def ai_chat(
     7. Return full AIChatResponse
     """
     # Run the pipeline
-    result = await run_chat_pipeline(
-        question=request.question,
-        chat_id=request.chat_id,
-        company_id=request.company_id,
-    )
+    try:
+        result = await run_chat_pipeline(
+            question=request.question,
+            chat_id=request.chat_id,
+            company_id=request.company_id,
+        )
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        error_str = str(exc)
+
+        # Classify the error for the frontend
+        if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            user_message = (
+                "AI quota exceeded. The Gemini free tier limit has been reached. "
+                "Please wait and try again, or upgrade your Gemini API plan."
+            )
+            status_code = 429
+        elif "quota" in error_str.lower():
+            user_message = "AI service quota exceeded. Please try again later."
+            status_code = 429
+        else:
+            user_message = f"AI pipeline failed: {error_str}"
+            status_code = 500
+
+        raise HTTPException(status_code=status_code, detail=user_message)
 
     answer = result["answer"]
     has_insight = result["has_insight"]
@@ -367,6 +502,7 @@ async def ai_chat(
         answer=answer,
         has_insight=has_insight,
         recommendation_id=recommendation_id,
+        title=answer.title if has_insight else None,
         chunks_used=chunks_used,
     )
 

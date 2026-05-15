@@ -1,9 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import AddBusinessLineModal from "./components/AddBusinessLineModal";
-import ViewCompaniesModal from "./components/ViewCompaniesModal";
-import ConfirmArchiveModal from "./components/ConfirmArchiveModal";
 
 interface BusinessLineCompany {
   id: string;
@@ -19,45 +16,55 @@ interface BusinessLine {
 }
 
 export default function BusinessLinesPage() {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [selectedBusinessLine, setSelectedBusinessLine] = useState<BusinessLine | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [businessLines, setBusinessLines] = useState<BusinessLine[]>([
     {
       id: "1",
-      name: "Sales & Marketing",
+      name: "Logistics",
       status: "Active",
       companies: [
-        { id: "1", name: "TechCorp Inc", status: "Active" },
-        { id: "2", name: "RetailPro", status: "Active" },
+        { id: "1", name: "NexVision Logistics", status: "Active" },
       ],
     },
     {
       id: "2",
-      name: "Operations",
+      name: "Clinic/Aesthetics",
       status: "Active",
       companies: [
-        { id: "3", name: "LogistiX Solutions", status: "Active" },
-        { id: "4", name: "FinanceHub", status: "Inactive" },
+        { id: "2", name: "NexVision Clinic", status: "Active" },
       ],
     },
     {
       id: "3",
-      name: "Logistics Network",
+      name: "HR/Admin",
       status: "Active",
       companies: [
-        { id: "5", name: "LogistiX Solutions", status: "Active" },
+        { id: "3", name: "NexVision HR", status: "Active" },
       ],
     },
     {
       id: "4",
-      name: "Warehouse",
-      status: "Inactive",
+      name: "Retail",
+      status: "Active",
       companies: [
-        { id: "6", name: "TechCorp Inc", status: "Inactive" },
+        { id: "4", name: "RetailPro", status: "Inactive" },
+      ],
+    },
+        {
+      id: "5",
+      name: "Construction",
+      status: "Active",
+      companies: [
+        { id: "5", name: "Construct Pro", status: "Inactive" },
+      ],
+    },
+        {
+      id: "6",
+      name: "Custom Business",
+      status: "Active",
+      companies: [
+        { id: "6", name: "Custom Business", status: "Inactive" },
       ],
     },
   ]);
@@ -68,26 +75,6 @@ export default function BusinessLinesPage() {
     ),
     [businessLines, searchTerm]
   );
-
-  const handleBusinessLineClick = (line: BusinessLine) => {
-    setSelectedBusinessLine(line);
-    setShowViewModal(true);
-  };
-
-  const archiveBusinessLine = () => {
-    if (!selectedBusinessLine) return;
-
-    setBusinessLines((previous) =>
-      previous.map((item) =>
-        item.id === selectedBusinessLine.id
-          ? { ...item, status: "Inactive" }
-          : item
-      )
-    );
-    setSelectedBusinessLine((previous) =>
-      previous ? { ...previous, status: "Inactive" } : previous
-    );
-  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
@@ -108,12 +95,6 @@ export default function BusinessLinesPage() {
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-black text-white rounded-md hover:bg-neutral-800 text-sm font-medium flex items-center gap-2 transition-colors cursor-pointer focus:outline-none"
-            >
-              <i className="fa-solid fa-plus"></i>Add Business Line
-            </button>
           </div>
         </div>
 
@@ -122,16 +103,13 @@ export default function BusinessLinesPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Business Line</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Companies</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredLines.map((line) => (
                 <tr key={line.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-3 font-medium text-gray-900">{line.name}</td>
-                  <td className="px-6 py-3 text-sm text-gray-600">{line.companies.length}</td>
                   <td className="px-6 py-3">
                     <span className={`text-xs font-semibold px-2 py-1 rounded ${
                       line.status === "Active"
@@ -141,19 +119,11 @@ export default function BusinessLinesPage() {
                       {line.status}
                     </span>
                   </td>
-                  <td className="px-6 py-3 text-right">
-                    <button
-                      onClick={() => handleBusinessLineClick(line)}
-                      className="text-blue-600 hover:text-blue-700 text-sm transition-colors"
-                    >
-                      View Details
-                    </button>
-                  </td>
                 </tr>
               ))}
               {filteredLines.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="px-6 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={2} className="px-6 py-6 text-center text-sm text-gray-500">
                     No business lines match your search.
                   </td>
                 </tr>
@@ -163,23 +133,6 @@ export default function BusinessLinesPage() {
         </div>
       </div>
 
-      <AddBusinessLineModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} />
-      {selectedBusinessLine && (
-        <ViewCompaniesModal
-          isOpen={showViewModal}
-          onClose={() => setShowViewModal(false)}
-          businessLineName={selectedBusinessLine.name}
-          companies={selectedBusinessLine.companies}
-          status={selectedBusinessLine.status}
-          onArchive={() => setShowArchiveConfirm(true)}
-        />
-      )}
-      <ConfirmArchiveModal
-        isOpen={showArchiveConfirm && !!selectedBusinessLine}
-        lineName={selectedBusinessLine?.name ?? "this business line"}
-        onClose={() => setShowArchiveConfirm(false)}
-        onConfirm={archiveBusinessLine}
-      />
     </div>
   );
 }

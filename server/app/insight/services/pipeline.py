@@ -19,7 +19,7 @@ Flow:
     7. Determine has_insight from the AI output fields
     8. Return structured result dict
 
-has_insight logic (see new-changes.md Section 6 for canonical spec):
+has_insight logic:
     True when ALL of:
         - missing_data is empty (or contains only minor/non-critical gaps)
         - recommendation is not empty
@@ -53,8 +53,6 @@ _CANNOT_ANSWER_PHRASES = [
 
 def _determine_has_insight(output: AIOutputJSON) -> bool:
     """
-    Apply the has_insight rule from new-changes.md Section 9.
-
     The BE — not the AI — decides whether a full actionable insight exists.
     This keeps the logic consistent regardless of how the AI phrases its response.
 

@@ -42,9 +42,10 @@ async def get_recommendation_stats(company_id: str) -> dict:
     sb = get_supabase_client()
     
     try:
+        # Join with ai_questions to get risk_level (not stored in recommendations table)
         result = (
             sb.table("recommendations")
-            .select("risk_level")
+            .select("ai_questions(risk_level)")
             .eq("company_id", company_id)
             .execute()
         )
@@ -60,7 +61,7 @@ async def get_recommendation_stats(company_id: str) -> dict:
         # Count by risk level
         if result.data:
             for row in result.data:
-                risk = row.get("risk_level", "Low")
+                risk = (row.get("ai_questions") or {}).get("risk_level", "Low")
                 if risk in risk_distribution:
                     risk_distribution[risk] += 1
         
