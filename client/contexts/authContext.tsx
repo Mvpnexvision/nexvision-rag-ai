@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useCallback,
   useState,
   ReactNode,
 } from "react";
@@ -11,13 +12,14 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/Toast";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { AppRole, ROLE_COOKIE_NAME, isAppRole } from "@/lib/authRoles";
 
 export interface UserProfile {
   id: string;
   company_id: string;
   name: string;
   email: string;
-  role: "superadmin" | "admin";
+  role: AppRole;
   status: "active" | "inactive";
 }
 
@@ -45,12 +47,22 @@ function syncAuthCookie(accessToken: string | null | undefined) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+
+  function syncRoleCookie(role: string | null | undefined) {
+    try {
+      if (isAppRole(role)) {
+        document.cookie = `${ROLE_COOKIE_NAME}=${role}; path=/; max-age=86400`;
+      } else {
+        document.cookie = `${ROLE_COOKIE_NAME}=; path=/; max-age=0`;
+      }
+    } catch {}
+  }
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function fetchProfile(accessToken: string): Promise<void> {
+  const fetchProfile = useCallback(async (accessToken: string): Promise<void> => {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -59,14 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data: UserProfile = await res.json();
         setProfile(data);
+        syncRoleCookie(data.role);
         return;
       }
 
       setProfile(null);
+      syncRoleCookie(null);
     } catch {
       setProfile(null);
+      syncRoleCookie(null);
     }
-  }
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -94,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === "SIGNED_OUT") {
         setProfile(null);
+        syncRoleCookie(null);
       }
 
       setLoading(false);
@@ -126,6 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     setUser(null);
     setProfile(null);
+    syncRoleCookie(null);
 
     try {
       showToast({

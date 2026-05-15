@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { debugLog } from "@/utils/logger";
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/contexts/authContext";
+import { getHomePathForRole, getSafeRedirectTarget, isAppRole, ROLE_COOKIE_NAME } from "@/lib/authRoles";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -18,7 +19,6 @@ export default function LoginClient() {
   const redirectTo = searchParams?.get("redirect") ?? undefined;
   const { showToast } = useToast();
   const { session, loading: authLoading, profile } = useAuth();
-  const [role, setRole] = useState<"owner" | "admin">("owner");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,11 +28,24 @@ export default function LoginClient() {
   useEffect(() => {
     if (!authLoading && session) {
       const roleFromProfile = profile?.role;
-      const defaultTarget =
-        roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
-      router.replace(redirectTo ?? defaultTarget);
+      const defaultTarget = getHomePathForRole(roleFromProfile);
+      const target =
+        redirectTo && isAppRole(roleFromProfile)
+          ? getSafeRedirectTarget(redirectTo, roleFromProfile)
+          : defaultTarget;
+      router.replace(target);
     }
   }, [authLoading, session, redirectTo, router, profile]);
+
+  function syncRoleCookie(role: string | null | undefined) {
+    try {
+      if (isAppRole(role)) {
+        document.cookie = `${ROLE_COOKIE_NAME}=${role}; path=/; max-age=86400`;
+      } else {
+        document.cookie = `${ROLE_COOKIE_NAME}=; path=/; max-age=0`;
+      }
+    } catch {}
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,15 +100,18 @@ export default function LoginClient() {
               "AUTH",
               `/auth/me -> profile=${JSON.stringify(profileBody)}`,
             );
+            syncRoleCookie(profileBody?.role);
             showToast({
               title: "Signed in",
               message: "Signed in successfully",
               type: "success",
             });
             const backendRole = profileBody?.role;
-            const defaultTarget =
-              backendRole === "superadmin" ? "/dashboard_admin" : "/dashboard";
-            const target = redirectTo ?? defaultTarget;
+            const defaultTarget = getHomePathForRole(backendRole);
+            const target =
+              redirectTo && isAppRole(backendRole)
+                ? getSafeRedirectTarget(redirectTo, backendRole)
+                : defaultTarget;
             router.replace(target);
             return;
           } else {
@@ -120,9 +136,11 @@ export default function LoginClient() {
 
       debugLog("AUTH", "Login success");
       const roleFromProfile = profile?.role;
-      const defaultTarget =
-        roleFromProfile === "superadmin" ? "/dashboard_admin" : "/dashboard";
-      const target = redirectTo ?? defaultTarget;
+      const defaultTarget = getHomePathForRole(roleFromProfile);
+      const target =
+        redirectTo && isAppRole(roleFromProfile)
+          ? getSafeRedirectTarget(redirectTo, roleFromProfile)
+          : defaultTarget;
       router.replace(target);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed.";
@@ -133,8 +151,6 @@ export default function LoginClient() {
       setLoading(false);
     }
   };
-
-  const isOwner = role === "owner";
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-linear-to-br from-[#122F35] to-[#081518]">
@@ -208,14 +224,12 @@ export default function LoginClient() {
           {error && <div className="mb-5 text-sm text-red-400">{error}</div>}
 
           <div className="flex justify-end mb-6 text-sm h-6">
-            {isOwner && (
-              <Link
-                href="/register"
-                className="hover:underline transition-colors text-gray-400 hover:text-white"
-              >
-                Don&apos;t have an account?
-              </Link>
-            )}
+            <Link
+              href="/register"
+              className="hover:underline transition-colors text-gray-400 hover:text-white"
+            >
+              Don&apos;t have an account?
+            </Link>
           </div>
 
           <button

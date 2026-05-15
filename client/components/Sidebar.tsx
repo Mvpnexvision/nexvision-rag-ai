@@ -8,6 +8,7 @@ import { debugLog } from "@/utils/logger";
 
 import ragLogoName from "@/app/resources/rag-logoName.png";
 import { useAuth } from "@/contexts/authContext";
+import { AppRole } from "@/lib/authRoles";
 
 interface NavItem {
   name: string;
@@ -21,7 +22,7 @@ interface NavCategory {
 }
 
 interface SidebarProps {
-  role?: "owner" | "superadmin";
+  role?: AppRole;
   isCollapsed: boolean;
   toggleSidebar: () => void;
   isMobileOpen: boolean;
@@ -29,7 +30,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  role = "owner",
+  role = "admin",
   isCollapsed,
   toggleSidebar,
   isMobileOpen,
@@ -43,7 +44,7 @@ export default function Sidebar({
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Navigation structure based on role
-  const ownerNavItems: NavItem[] = [
+  const adminNavItems: NavItem[] = [
     { name: "Dashboard", path: "/dashboard", icon: "fa-border-all" },
     { name: "AI Chat", path: "/chat", icon: "fa-message" },
     { name: "AI Insights", path: "/recommendations", icon: "fa-circle-info" },
@@ -87,6 +88,9 @@ export default function Sidebar({
   const isSuperadmin = role === "superadmin";
   const { profile, signOut } = useAuth();
   const displayName = profile?.name ?? "Unknown User";
+  const displayFirstName =
+    profile?.name?.trim().split(/\s+/)[0] ?? profile?.email?.split("@")[0] ?? "User";
+  const displayEmail = profile?.email ?? "";
   const displayRole = profile?.role ?? role;
   const avatarInitials = profile?.name
     ? profile.name
@@ -160,7 +164,7 @@ export default function Sidebar({
                             hover:bg-[#122F35]
                             hover:text-[#0DBBC4]
                             transition-colors
-                            flex-shrink-0
+                            shrink-0
                         "
           >
             <i className="fa-solid fa-bars"></i>
@@ -241,8 +245,8 @@ export default function Sidebar({
                   ))}
               </div>
             ))
-            : // Owner simple navigation
-            ownerNavItems.map((item) => (
+            : // Admin simple navigation
+            adminNavItems.map((item) => (
               <Link
                 key={item.path}
                 href={item.path}
@@ -288,25 +292,12 @@ export default function Sidebar({
                 {/* User info header inside dropdown */}
                 <div className="px-4 py-3 border-b border-[#1a3f47]">
                   <p className="text-sm font-semibold text-white truncate">
-                    First Name
+                    {displayFirstName}
                   </p>
                   <p className="text-xs text-[#0DBBC4]/70 truncate">
-                    first@email.com
+                    {displayEmail}
                   </p>
                 </div>
-
-                <button
-                  className="
-                                    w-full flex items-center gap-3
-                                    px-4 py-2.5
-                                    text-sm text-gray-300
-                                    hover:bg-[#122F35] hover:text-white
-                                    transition-colors
-                                "
-                >
-                  <i className="fa-solid fa-gear w-4 text-center text-gray-400"></i>
-                  <span>Settings</span>
-                </button>
 
                 <button
                   onClick={() => {

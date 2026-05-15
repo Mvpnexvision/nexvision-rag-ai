@@ -176,7 +176,7 @@ class Settings:
 
     ALLOWED_ORIGINS: list[str] = os.getenv(
         "CORS_ORIGINS",
-        os.getenv("CORS_ORIGIN", "http://localhost:3000"),
+        os.getenv("CORS_ORIGIN", "*"),
     ).split(",")
     """
     Comma-separated list of allowed frontend origins.
