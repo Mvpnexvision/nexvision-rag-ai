@@ -100,6 +100,7 @@ async def _save_ai_question(
         "missing_data": json.dumps(answer.missing_data),
         "sources_json": json.dumps(answer.sources),
         "has_insight": has_insight,
+        "title": answer.title if has_insight else None,
     }
 
     try:
@@ -501,6 +502,7 @@ async def ai_chat(
         answer=answer,
         has_insight=has_insight,
         recommendation_id=recommendation_id,
+        title=answer.title if has_insight else None,
         chunks_used=chunks_used,
     )
 
