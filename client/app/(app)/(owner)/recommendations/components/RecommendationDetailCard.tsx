@@ -1,6 +1,7 @@
 "use client";
 
 interface RecommendationDetailCardProps {
+  title: string;
   recommendation: string;
   reasoning: string;
   next_action: string;
@@ -19,6 +20,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function RecommendationDetailCard({
+  title,
   recommendation,
   reasoning,
   next_action,
@@ -44,7 +46,7 @@ export default function RecommendationDetailCard({
           <div className="flex-1 min-w-0">
             {/* break-words para hindi lumampas ang mahabang text */}
             <h3 className="text-2xl font-semibold text-black leading-tight wrap-break-word">
-              {recommendation}
+              {title}
             </h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <span className={`text-xs font-semibold px-2.5 py-1 rounded ${riskColor}`}>
@@ -86,6 +88,11 @@ export default function RecommendationDetailCard({
         </div>
 
         <div className="space-y-6 pt-4 border-t border-gray-100">
+          <div>
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Recommendation</h4>
+            <p className="mt-2 text-sm text-gray-700 leading-relaxed wrap-break-word">{recommendation}</p>
+          </div>
+
           <div>
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Reasoning</h4>
             <p className="mt-2 text-sm text-gray-700 leading-relaxed wrap-break-word">{reasoning}</p>

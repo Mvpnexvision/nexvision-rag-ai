@@ -23,6 +23,7 @@ interface Recommendation {
   business_impact: string;
   next_action: string;
   sources: string[];
+  title: string;
 }
 
 interface RecommendationsResponse {
@@ -166,14 +167,14 @@ export default function RecommendationsPage() {
                     key={rec.id}
                     onClick={() => setSelectedId(rec.id)}
                     className={`w-full text-left rounded-2xl border p-4 transition-colors overflow-hidden ${rec.id === selectedId
-                        ? "border-black bg-white shadow-sm"
-                        : "border-transparent bg-white/80 hover:border-gray-200 hover:bg-gray-50"
+                      ? "border-black bg-white shadow-sm"
+                      : "border-transparent bg-white/80 hover:border-gray-200 hover:bg-gray-50"
                       }`}
                   >
                     <div className="flex flex-col gap-3">
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-900 truncate max-w-full">
-                          {rec.recommendation}
+                          {rec.title}
                         </p>
                         <p className="text-xs text-gray-500 mt-1 truncate">
                           {rec.question}
@@ -199,6 +200,7 @@ export default function RecommendationsPage() {
           <div className="min-w-0">
             {selectedRec && (
               <RecommendationDetailCard
+                title={selectedRec.title}
                 recommendation={selectedRec.recommendation}
                 reasoning={selectedRec.reasoning}
                 next_action={selectedRec.next_action}
