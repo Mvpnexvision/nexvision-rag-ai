@@ -22,6 +22,8 @@ class CompanyItem(BaseModel):
     """A single company for the superadmin company selector"""
     id: str
     name: str
+    business_line: str = ""  
+  
 
 
 class CompaniesResponse(BaseModel):
@@ -97,13 +99,13 @@ async def get_all_companies():
             return CompaniesResponse(companies=MOCK_COMPANIES)
 
         sb = get_supabase_client()
-        result = sb.table("companies").select("id, company_name").order("company_name").execute()
+        result = sb.table("companies").select("id, company_name, business_line").order("company_name").execute()
 
         companies = []
         if result.data:
             for row in result.data:
                 companies.append(
-                    CompanyItem(id=row.get("id"), name=row.get("company_name", ""))
+                    CompanyItem(id=row.get("id"), name=row.get("company_name", ""), business_line=row.get("business_line", ""))
                 )
 
         return CompaniesResponse(companies=companies)

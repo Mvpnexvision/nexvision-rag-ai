@@ -104,7 +104,9 @@ export default function Dashboard() {
   };
 
   const selectedCompanyObj = companies.find((c) => c.id === selectedCompany);
-  const businessLine = selectedCompanyObj ? selectedCompanyObj.name : "";
+  const businessLine = selectedCompanyObj
+    ? selectedCompanyObj.business_line
+    : "";
   const isOverall = selectedCompany === "overall";
 
   // Most Searched Topics (hardcoded for now)
@@ -612,9 +614,9 @@ export default function Dashboard() {
       </div>
 
       {/* ── Bottom Row ── */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className=" gap-5 w-full">
         {/* Latest Uploads */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+        <div className="bg-white rounded-xl border w-full border-gray-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-gray-900">Latest Uploads</h3>
             <button className="text-xs text-blue-500 hover:underline font-medium">
@@ -679,56 +681,6 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
-
-          <button className="mt-3.5 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            View All Uploads{" "}
-            <i className="fa-solid fa-chevron-right text-[9px]" />
-          </button>
-        </div>
-
-        {/* Most Searched Topics */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-bold text-gray-900">
-              Most Searched Topics
-            </h3>
-            <button className="text-xs text-blue-500 hover:underline font-medium">
-              View All
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            {searchedTopics.map((topic, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <p className="text-xs text-gray-700 w-36 flex-shrink-0">
-                  {topic.label}
-                </p>
-                <div className="flex-1 relative h-2 bg-gray-100 rounded-full">
-                  <div
-                    className="h-full bg-teal-500 rounded-full"
-                    style={{ width: `${topic.pct}%` }}
-                  />
-                  {topic.hasDot && (
-                    <div
-                      className="absolute top-1/2 w-3 h-3 rounded-full border-2 border-white bg-teal-400 shadow-sm"
-                      style={{
-                        left: `${topic.pct}%`,
-                        transform: "translate(-50%, -50%)",
-                      }}
-                    />
-                  )}
-                </div>
-                <span className="text-xs font-semibold text-gray-700 w-7 text-right flex-shrink-0">
-                  {topic.count}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <button className="mt-5 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-            View All Topics{" "}
-            <i className="fa-solid fa-chevron-right text-[9px]" />
-          </button>
         </div>
       </div>
     </div>
