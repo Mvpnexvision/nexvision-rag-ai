@@ -608,7 +608,7 @@ async def list_recommendations(
         .select(
             "id, ai_question_id, company_id, status, created_at, updated_at, "
             "ai_questions(question, answer, evidence_found, reasoning, recommendation, "
-            "risk_level, business_impact, next_action, sources_json)"
+            "risk_level, business_impact, next_action, sources_json, title)"
         )
         .eq("company_id", company_id)
         .order("created_at", desc=True)
@@ -651,6 +651,7 @@ async def list_recommendations(
             business_impact=aq.get("business_impact", ""),
             next_action=aq.get("next_action", ""),
             sources=_parse_jsonb(aq.get("sources_json", [])),
+            title=aq.get("title", None),
         ))
 
     return RecommendationsListResponse(

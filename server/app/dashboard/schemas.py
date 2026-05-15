@@ -105,7 +105,7 @@ class SourceItem(BaseModel):
     
     id: str = Field(..., description="UUID of the document")
     name: str = Field(..., description="File name")
-    file_type: Literal["PDF", "DOCX", "XLSX", "CSV", "TXT"] = Field(
+    file_type: Literal["PDF", "DOCX", "XLSX", "CSV", "TXT", "MD"] = Field(
         ...,
         description="File type/format"
     )
