@@ -298,6 +298,7 @@ class RecommendationRecord(BaseModel):
     business_impact: str
     next_action: str
     sources: list[str]
+    title: str | None
 
 
 class RecommendationsListResponse(BaseModel):
