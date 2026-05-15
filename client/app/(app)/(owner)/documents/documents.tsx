@@ -38,6 +38,21 @@ interface DocumentsPageListResponse {
     documents: DocumentPageItem[];
 }
 
+type DocumentFilters = {
+    fileType: string;
+    dateFrom: string;
+    dateTo: string;
+};
+
+const DEFAULT_FILTERS: DocumentFilters = {
+    fileType: "",
+    dateFrom: "",
+    dateTo: "",
+};
+
+const SEARCH_DEBOUNCE_MS = 350;
+const PAGE_SIZE = 100;
+
 const getFileIcon = (fileType: string): string => {
     const type = fileType.toUpperCase();
     switch (type) {
@@ -64,8 +79,19 @@ export default function Documents() {
     const [showModal, setShowModal] = useState(false);
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchValue, setSearchValue] = useState("");
+    const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
+    const [filters, setFilters] = useState<DocumentFilters>(DEFAULT_FILTERS);
     const { profile } = useAuth();
     const { get } = useFetch();
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchValue(searchValue.trim());
+        }, SEARCH_DEBOUNCE_MS);
+
+        return () => clearTimeout(timer);
+    }, [searchValue]);
 
     useEffect(() => {
         const fetchDocuments = async () => {
@@ -76,20 +102,53 @@ export default function Documents() {
 
             try {
                 setLoading(true);
-                const response = await get<DocumentsPageListResponse>(
-                    `/documents/page/list?company_id=${profile.company_id}&limit=100&offset=0`
-                );
+                let offset = 0;
+                let total = 0;
+                const fetchedDocuments: DocumentItem[] = [];
 
-                // Transform API response to DocumentItem format
-                const transformedDocs: DocumentItem[] = response.documents.map((doc) => ({
-                    id: doc.id,
-                    icon: getFileIcon(doc.file_type),
-                    name: doc.file_name,
-                    date: doc.created_at,
-                    type: doc.file_type,
-                }));
+                do {
+                    const params = new URLSearchParams({
+                        company_id: profile.company_id,
+                        limit: String(PAGE_SIZE),
+                        offset: String(offset),
+                    });
 
-                setDocuments(transformedDocs);
+                    if (debouncedSearchValue) {
+                        params.set("search", debouncedSearchValue);
+                    }
+
+                    if (filters.fileType) {
+                        params.set("file_type", filters.fileType);
+                    }
+
+                    if (filters.dateFrom) {
+                        params.set("date_from", filters.dateFrom);
+                    }
+
+                    if (filters.dateTo) {
+                        params.set("date_to", filters.dateTo);
+                    }
+
+                    const response = await get<DocumentsPageListResponse>(
+                        `/documents/page/list?${params.toString()}`
+                    );
+
+                    total = response.total;
+
+                    fetchedDocuments.push(
+                        ...response.documents.map((doc) => ({
+                            id: doc.id,
+                            icon: getFileIcon(doc.file_type),
+                            name: doc.file_name,
+                            date: doc.created_at,
+                            type: doc.file_type,
+                        })),
+                    );
+
+                    offset += PAGE_SIZE;
+                } while (fetchedDocuments.length < total && total > 0);
+
+                setDocuments(fetchedDocuments);
             } catch (error) {
                 console.error("Failed to fetch documents:", error);
                 setDocuments([]);
@@ -99,9 +158,12 @@ export default function Documents() {
         };
 
         fetchDocuments();
-    }, [profile?.company_id, get]);
+    }, [profile?.company_id, debouncedSearchValue, filters, get]);
 
     const docs = documents;
+    const hasActiveFilters = Boolean(
+        searchValue.trim() || filters.fileType || filters.dateFrom || filters.dateTo,
+    );
 
     // Grouping logic
     const groupedDocs = useMemo(() => {
@@ -136,11 +198,15 @@ export default function Documents() {
                     viewMode={viewMode}
                     setViewMode={setViewMode}
                     onOpenFilter={() => setShowModal(true)}
+                    searchValue={searchValue}
+                    onSearchChange={setSearchValue}
                 />
 
                 <GroupedDocumentView
                     groupedDocs={groupedDocs}
                     viewMode={viewMode}
+                    loading={loading}
+                    hasActiveFilters={hasActiveFilters}
                 />
 
             </div>
@@ -148,6 +214,8 @@ export default function Documents() {
             <FilterModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
+                filters={filters}
+                onApply={setFilters}
             />
         </div>
     );

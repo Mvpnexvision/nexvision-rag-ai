@@ -5,9 +5,17 @@ interface DocumentToolbarProps {
     viewMode: ViewMode;
     setViewMode: (mode: ViewMode) => void;
     onOpenFilter: () => void;
+    searchValue: string;
+    onSearchChange: (value: string) => void;
 }
 
-export default function DocumentToolbar({ viewMode, setViewMode, onOpenFilter }: DocumentToolbarProps) {
+export default function DocumentToolbar({
+    viewMode,
+    setViewMode,
+    onOpenFilter,
+    searchValue,
+    onSearchChange,
+}: DocumentToolbarProps) {
     return (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <h2 className="text-2xl font-medium text-black">My Documents</h2>
@@ -42,7 +50,13 @@ export default function DocumentToolbar({ viewMode, setViewMode, onOpenFilter }:
                 {/* Search Bar */}
                 <div className="flex items-center gap-2 text-black bg-neutral-50 border border-gray-200 rounded-md px-3 py-2 w-full md:w-64 focus-within:border-black cursor-text">
                     <i className="fa-solid fa-magnifying-glass text-gray-400"></i>
-                    <input type="text" placeholder="Search my documents..." className="bg-transparent border-none outline-none text-sm w-full" />
+                    <input
+                        type="text"
+                        placeholder="Search my documents..."
+                        className="bg-transparent border-none outline-none text-sm w-full"
+                        value={searchValue}
+                        onChange={(event) => onSearchChange(event.target.value)}
+                    />
                 </div>
 
                 {/* Filter & Upload Buttons */}
