@@ -15,6 +15,8 @@ export const POLL_INTERVAL_MS = 500;
 
 export type PollStatus = "processing" | "completed" | "failed";
 
+const DOCUMENT_PROCESSING_FAILED_ERROR_NAME = "DocumentProcessingFailedError";
+
 export function mapPollStatus(rawStatus: string): PollStatus {
   const normalized = rawStatus.toLowerCase();
   if (normalized === "ai ready") return "completed";
@@ -62,7 +64,13 @@ export interface PollOptions {
  * component unmount).
  */
 export function useDocumentPolling() {
-  const { processDocument, getDocumentStatus } = useChatWorkflowApi();
+  const { processDocument, getDocumentStatus, deleteDocument } = useChatWorkflowApi();
+
+  const createFailedProcessingError = (message: string) => {
+    const error = new Error(message);
+    error.name = DOCUMENT_PROCESSING_FAILED_ERROR_NAME;
+    return error;
+  };
 
   const processAndPoll = useCallback(
     async (
@@ -77,7 +85,19 @@ export function useDocumentPolling() {
         );
       }
 
-      await processDocument(documentId);
+      const processResponse = await processDocument(documentId);
+
+      if (processResponse.processing_status?.toLowerCase() === "failed") {
+        try {
+          await deleteDocument(documentId);
+        } catch {
+          // Ignore cleanup failures here; the original failure still matters.
+        }
+
+        throw createFailedProcessingError(
+          `Document processing failed for ${processResponse.file_name}.`,
+        );
+      }
 
       // ── 2. Poll until terminal state ─────────────────────────────────────
       for (;;) {
@@ -100,7 +120,13 @@ export function useDocumentPolling() {
         }
 
         if (pollStatus === "failed") {
-          throw new Error(
+          try {
+            await deleteDocument(documentId);
+          } catch {
+            // Ignore cleanup failures here; the original failure still matters.
+          }
+
+          throw createFailedProcessingError(
             `Document "${statusResponse.file_name}" failed during processing.`,
           );
         }
