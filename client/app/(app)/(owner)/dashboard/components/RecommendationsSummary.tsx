@@ -69,7 +69,7 @@ export default function RecommendationsSummary({
     return (
         <div className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-lg font-medium text-black">Recommendations Summary</h2>
+                <h2 className="text-lg font-medium text-black">AI Insights Summary</h2>
                 <Link
                     href="/recommendations"
                     className="text-xs text-black hover:underline transition-colors"
@@ -97,7 +97,7 @@ export default function RecommendationsSummary({
 
             <div className="flex flex-col gap-2 mt-2">
                 <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                    Top Recommendations
+                    Top AI Insights
                 </h3>
                 <ul className="flex flex-col gap-2">
                     {recommendations.map((rec) => (

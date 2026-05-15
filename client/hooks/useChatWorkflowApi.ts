@@ -52,6 +52,50 @@ export interface AIChatResponse {
   chunks_used: number;
 }
 
+export interface ChatListItem {
+  chat_id: string;
+  title: string;
+  company_id: string;
+  user_id: string;
+  document_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatListResponse {
+  user_id: string;
+  company_id: string;
+  chats: ChatListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AIQuestionRecord {
+  id: string;
+  chat_id: string;
+  company_id: string;
+  user_id: string;
+  question: string;
+  answer: string;
+  evidence_found: string[];
+  reasoning: string;
+  recommendation: string;
+  risk_level: string;
+  business_impact: string;
+  next_action: string;
+  missing_data: string[];
+  sources_json: string[];
+  has_insight: boolean;
+  created_at: string;
+}
+
+export interface AIQuestionsListResponse {
+  chat_id: string;
+  questions: AIQuestionRecord[];
+  total: number;
+}
+
 interface UseChatWorkflowApiReturn {
   loading: boolean;
   error: string | null;
@@ -78,6 +122,12 @@ interface UseChatWorkflowApiReturn {
     userId: string;
     question: string;
   }) => Promise<AIChatResponse>;
+  listChats: (params: {
+    companyId: string;
+    limit?: number;
+    offset?: number;
+  }) => Promise<ChatListResponse>;
+  getChatMessages: (chatId: string) => Promise<AIQuestionsListResponse>;
 }
 
 export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
@@ -162,6 +212,24 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     });
   };
 
+  const listChats = async ({
+    companyId,
+    limit = 20,
+    offset = 0,
+  }: {
+    companyId: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ChatListResponse> => {
+    return get<ChatListResponse>(
+      `/insights/chat?company_id=${encodeURIComponent(companyId)}&limit=${limit}&offset=${offset}`
+    );
+  };
+
+  const getChatMessages = async (chatId: string): Promise<AIQuestionsListResponse> => {
+    return get<AIQuestionsListResponse>(`/insights/chat/${chatId}/messages`);
+  };
+
   return {
     loading,
     error,
@@ -171,5 +239,7 @@ export function useChatWorkflowApi(): UseChatWorkflowApiReturn {
     processDocument,
     getDocumentStatus,
     sendAIChat,
+    listChats,
+    getChatMessages,
   };
 }

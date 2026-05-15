@@ -214,38 +214,6 @@ export default function Login() {
             {loading ? "Signing in..." : "Log In"}
           </button>
         </form>
-
-        {/* Role Selection Buttons */}
-        <div className="mt-8 pt-6 border-t border-gray-700 flex gap-4">
-          <button
-            type="button"
-            onClick={() => {
-              debugLog("AUTH", "Role select: admin");
-              setRole("admin");
-            }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors border ${
-              role === "admin"
-                ? "bg-[#0DBBC4] text-white border-[#0DBBC4]"
-                : "bg-transparent border-gray-500 text-gray-400 hover:text-white hover:border-gray-400"
-            }`}
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              debugLog("AUTH", "Role select: owner");
-              setRole("owner");
-            }}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors border ${
-              role === "owner"
-                ? "bg-[#0DBBC4] text-white border-[#0DBBC4]"
-                : "bg-transparent border-gray-500 text-gray-400 hover:text-white hover:border-gray-400"
-            }`}
-          >
-            Company Owner
-          </button>
-        </div>
       </div>
     </div>
   );

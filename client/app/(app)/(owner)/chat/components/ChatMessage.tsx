@@ -7,18 +7,21 @@ interface ChatMessageProps {
     role: "user" | "assistant" | "system";
     content: React.ReactNode;
     attachedFiles?: AttachedFile[];
+    isFromServer?: boolean;
 }
 
-export default function ChatMessage({ role, content, attachedFiles = [] }: ChatMessageProps) {
+export default function ChatMessage({ role, content, attachedFiles = [], isFromServer = false }: ChatMessageProps) {
     const isUser = role === "user";
     const isSystem = role === "system";
-    const [displayedContent, setDisplayedContent] = useState("");
+    const [displayedContent, setDisplayedContent] = useState(
+        isFromServer && typeof content === "string" ? content : ""
+    );
 
-    // Only animate if it's the assistant and the content is a string
-    const [isTyping, setIsTyping] = useState(!isUser && typeof content === "string");
+    // Only animate if it's the assistant, content is a string, and it's not from server
+    const [isTyping, setIsTyping] = useState(!isUser && !isFromServer && typeof content === "string");
 
     useEffect(() => {
-        if (!isUser && typeof content === "string") {
+        if (!isUser && !isFromServer && typeof content === "string") {
             let i = 0;
 
             const intervalId = setInterval(() => {

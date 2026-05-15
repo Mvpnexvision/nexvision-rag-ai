@@ -4,15 +4,14 @@ interface Stat {
     icon: string;
     label: string;
     value: string;
-    iconColor: string; // Dinagdag natin ito para sa kulay
+    iconColor: string;
 }
 
 const stats: Stat[] = [
     { icon: "fa-solid fa-file-lines", label: "Total Files", value: "142", iconColor: "text-blue-500" },
-    { icon: "fa-solid fa-comments", label: "AI Questions", value: "87", iconColor: "text-purple-500" },
-    { icon: "fa-solid fa-bolt", label: "AI Insights", value: "1,048", iconColor: "text-amber-500" },
-    { icon: "fa-solid fa-triangle-exclamation", label: "Critical Risk Items", value: "3", iconColor: "text-red-500" },
-    { icon: "fa-solid fa-circle-info", label: "Recommendations", value: "32", iconColor: "text-emerald-500" },
+    { icon: "fa-solid fa-comments", label: "AI Questions", value: "87", iconColor: "text-green-500" },
+    { icon: "fa-solid fa-circle-info", label: "AI Insights", value: "1,048", iconColor: "text-yellow-500" },
+    { icon: "fa-solid fa-triangle-exclamation", label: "Critical Risk Items", value: "3", iconColor: "text-purple-500" },
 ];
 
 export default function StatsCards() {
