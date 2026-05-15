@@ -58,38 +58,28 @@ async def get_dashboard_stats(company_id: str) -> dict:
         # AI insights = same as ai_questions (each question generates one insight)
         ai_insights = ai_questions
         
-        # Fetch all recommendations
+        # Count high-risk items: ai_questions where has_insight=true and risk_level='Critical'
+        high_risk_result = (
+            sb.table("ai_questions")
+            .select("id")
+            .eq("company_id", company_id)
+            .eq("has_insight", True)
+            .eq("risk_level", "Critical")
+            .execute()
+        )
+        high_risk_count = len(high_risk_result.data) if high_risk_result.data else 0
+        
+        # Count total recommendations
         recs_result = (
             sb.table("recommendations")
-            .select("id, risk_level")
+            .select("id")
             .eq("company_id", company_id)
             .execute()
         )
-        
-        total_recommendations = 0
-        high_risk_count = 0
-        
-        if recs_result.data:
-            # Count high-risk items from ai_questions where has_insight=true and risk_level='Critical'
-            high_risk_result = (
-                sb.table("ai_questions")
-                .select("id")
-                .eq("company_id", company_id)
-                .eq("has_insight", True)
-                .eq("risk_level", "Critical")
-                .execute()
-            )
-            high_risk_count = len(high_risk_result.data) if high_risk_result.data else 0
-
-            recs_result = (
-                sb.table("recommendations")
-                .select("id")
-                .eq("company_id", company_id)
-                .execute()
-            )
-            total_recommendations = len(recs_result.data) if recs_result.data else 0
+        total_recommendations = len(recs_result.data) if recs_result.data else 0
         
         return {
+            "company_id": company_id,
             "total_files": total_files,
             "ai_questions": ai_questions,
             "ai_insights": ai_insights,
