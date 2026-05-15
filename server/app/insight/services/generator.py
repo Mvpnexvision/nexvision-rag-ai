@@ -252,3 +252,53 @@ async def build_and_call_gemini(
             status_code=500,
             detail=f"AI response did not match expected output schema: {exc}",
         )
+    
+async def generate_title_from_gemini(question: str, answer: str) -> str:
+    """
+    Generate a short descriptive chat title from the first question and answer.
+
+    Called once after the first message in a chat session. The title is
+    persisted to ai_chats.title by the router after this returns.
+
+    Args:
+        question: The user's first question in the chat.
+        answer:   The AI's direct_answer to that question.
+
+    Returns:
+        str: A 5-8 word title summarising the chat topic.
+
+    Raises:
+        HTTPException 500: If Gemini returns an empty or failed response.
+    """
+    prompt = (
+        "You are a helpful assistant that generates short, descriptive chat titles.\n\n"
+        "Based on the following question and answer, generate a concise chat title "
+        "that summarises the topic in 5-8 words. Return ONLY the title — no quotes, "
+        "no punctuation at the end, no explanation.\n\n"
+        f"Question: {question}\n"
+        f"Answer: {answer}\n\n"
+        "Title:"
+    )
+
+    try:
+        model = get_chat_model()
+        response = await asyncio.to_thread(
+            lambda: model.generate_content(
+                model=settings.GEMINI_CHAT_MODEL,
+                contents=prompt,
+                config={"thinking_config": {"thinking_budget": 0}},
+            )
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Gemini call failed during title generation: {exc}",
+        )
+
+    if not response.text:
+        raise HTTPException(
+            status_code=500,
+            detail="Gemini returned an empty title.",
+        )
+
+    return response.text.strip().strip('"').strip("'")
