@@ -35,6 +35,8 @@ from app.dashboard.router import router as dashboard_router
 from app.superadmin.router import router as superadmin_router
 from app.company.router import router as company_router
 from app.auth.router import router as auth_router
+
+from app.business_lines.router import router as business_lines_router
 # from app.reports.router import router as reports_router
 
 # ---------------------------------------------------------------------------
@@ -92,6 +94,14 @@ app.include_router(company_router, prefix="/companies", tags=["Company Managemen
 
 # Auth Module: /auth/me
 app.include_router(auth_router, prefix="/auth", tags=["Auth Module"])
+
+# Add this alongside your other app.include_router() calls
+app.include_router(
+    business_lines_router,
+    prefix="/business-lines",
+    tags=["Business Lines"],
+)
+
 
 # Reports Module: /reports/generate, GET /reports
 # app.include_router(reports_router, prefix="/reports", tags=["Reports Module"])
